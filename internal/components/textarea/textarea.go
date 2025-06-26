@@ -1,0 +1,93 @@
+package textarea
+
+import (
+	"github.com/charmbracelet/bubbles/v2/key"
+	"github.com/charmbracelet/bubbles/v2/textarea"
+	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/lipgloss/v2"
+)
+
+const (
+	minHeight        = 3
+	defaultHeight    = 3
+	defaultWidth     = 40
+	defaultCharLimit = 0 // no limit
+	defaultMaxHeight = 99
+	defaultMaxWidth  = 500
+)
+
+type (
+	errMsg error
+)
+
+type Model struct {
+	textarea  textarea.Model
+	err       errMsg
+	InputChan chan string
+}
+
+func (m Model) Init() tea.Cmd {
+	return textarea.Blink
+}
+
+func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+	var (
+		tiCmd tea.Cmd
+	)
+
+	m.textarea, tiCmd = m.textarea.Update(msg)
+
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.textarea.SetWidth(msg.Width)
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "enter":
+			m.InputChan <- m.textarea.Value()
+			m.textarea.SetValue("")
+		}
+
+	// We handle errors just like any other message
+	case errMsg:
+		m.err = msg
+		return m, nil
+	}
+
+	return m, tiCmd
+}
+
+func (m Model) View() string {
+	return m.textarea.View()
+}
+
+func (m Model) Value() string {
+	return m.textarea.Value()
+}
+
+func NewModel() Model {
+	model := textarea.New()
+	model.Placeholder = "Enter the note..."
+
+	model.Focus()
+
+	model.Prompt = "┃ "
+	model.CharLimit = defaultCharLimit
+
+	model.SetWidth(defaultWidth)
+	model.SetHeight(defaultHeight)
+	model.KeyMap.InsertNewline = key.NewBinding(
+		key.WithKeys("shift+enter"),
+		key.WithHelp("shift+enter", "insert newline"),
+	)
+
+	// Remove cursor line styling
+	model.Styles.Focused.CursorLine = lipgloss.NewStyle()
+
+	model.ShowLineNumbers = false
+
+	return Model{
+		textarea:  model,
+		err:       nil,
+		InputChan: make(chan string),
+	}
+}
