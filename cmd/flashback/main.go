@@ -1,11 +1,17 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
 	"os"
 
+	_ "github.com/tursodatabase/go-libsql"
+
 	tea "github.com/charmbracelet/bubbletea/v2"
-	app "github.com/yagnik-patel-47/flashback/internal/app"
+
+	"github.com/yagnik-patel-47/flashback/internal/app"
+	"github.com/yagnik-patel-47/flashback/internal/migration"
 )
 
 func main() {
@@ -16,13 +22,21 @@ func main() {
 	}
 	defer f.Close()
 
-	p := tea.NewProgram(app.InitModel(), tea.WithAltScreen(), tea.WithKeyboardEnhancements())
-	res, err := p.Run()
+	db, err := sql.Open("libsql", "file:"+"test.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	err = migration.Migrate(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	p := tea.NewProgram(app.InitModel(db), tea.WithAltScreen(), tea.WithKeyboardEnhancements())
+	_, err = p.Run()
 	if err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
-
-	final, _ := res.(app.Model)
-	fmt.Print(final.Output)
 }

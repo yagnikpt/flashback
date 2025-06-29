@@ -31,15 +31,9 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
-	var (
-		tiCmd tea.Cmd
-	)
-
-	m.textarea, tiCmd = m.textarea.Update(msg)
-
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.textarea.SetWidth(msg.Width)
+		m.textarea.SetWidth(msg.Width - 4)
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "enter":
@@ -53,7 +47,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		return m, nil
 	}
 
-	return m, tiCmd
+	var cmd tea.Cmd
+	m.textarea, cmd = m.textarea.Update(msg)
+	return m, cmd
 }
 
 func (m Model) View() string {
@@ -64,11 +60,24 @@ func (m Model) Value() string {
 	return m.textarea.Value()
 }
 
+func (m *Model) Blur() {
+	m.textarea.Blur()
+}
+
+func (m *Model) Focus() {
+	m.textarea.Focus()
+}
+
+func (m *Model) SetPlaceholder(str string) {
+	m.textarea.Placeholder = str
+}
+
 func NewModel() Model {
 	model := textarea.New()
 	model.Placeholder = "Enter the note..."
 
 	model.Focus()
+	// model.Cursor().Blink = true
 
 	model.Prompt = "┃ "
 	model.CharLimit = defaultCharLimit
