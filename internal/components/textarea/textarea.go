@@ -21,9 +21,9 @@ type (
 )
 
 type Model struct {
-	textarea  textarea.Model
-	err       errMsg
-	InputChan chan string
+	textarea   textarea.Model
+	err        errMsg
+	OutputChan chan string
 }
 
 func (m Model) Init() tea.Cmd {
@@ -37,7 +37,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "enter":
-			m.InputChan <- m.textarea.Value()
+			m.OutputChan <- m.textarea.Value()
 			m.textarea.SetValue("")
 		}
 
@@ -95,8 +95,8 @@ func NewModel() Model {
 	model.ShowLineNumbers = false
 
 	return Model{
-		textarea:  model,
-		err:       nil,
-		InputChan: make(chan string),
+		textarea:   model,
+		err:        nil,
+		OutputChan: make(chan string),
 	}
 }

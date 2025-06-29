@@ -19,6 +19,18 @@ func readInput(ch <-chan string) tea.Cmd {
 	}
 }
 
+func readDeleteInput(m Model, ch <-chan notes.Note) tea.Cmd {
+	return func() tea.Msg {
+		note := <-ch
+		err := m.notes.DeleteNote(note.ID)
+		if err != nil {
+			log.Println("Error creating note:", err)
+			return deleteNoteMsg(false)
+		}
+		return deleteNoteMsg(true)
+	}
+}
+
 func addNoteCmd(m Model, note string) tea.Cmd {
 	return func() tea.Msg {
 		err := m.notes.CreateNote(note)

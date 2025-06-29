@@ -1,38 +1,51 @@
 package notelist
 
 import (
-	"time"
+	"fmt"
+	"strings"
 
-	"github.com/charmbracelet/bubbles/v2/list"
+	"github.com/charmbracelet/bubbles/v2/key"
+	"github.com/charmbracelet/bubbles/v2/paginator"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/yagnik-patel-47/flashback/internal/notes"
 )
 
-type item struct {
-	content   string
-	createdAt time.Time
-}
-
-func (i item) Content() string     { return i.content }
-func (i item) CreatedAt() string   { return i.createdAt.Format(time.RFC3339) }
-func (i item) FilterValue() string { return i.content }
-
 type Model struct {
-	list     list.Model
-	docStyle lipgloss.Style
+	items      []notes.Note
+	cursor     int
+	paginator  paginator.Model
+	OutputChan chan notes.Note
 }
 
-func NewModel() Model {
-	items := []list.Item{
-		item{content: "Note 1", createdAt: time.Now()},
-		item{content: "Note 2", createdAt: time.Now()},
-		item{content: "Note 3", createdAt: time.Now()},
-	}
-	m := Model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
-	m.list.Title = "Remove notes"
+var listContainerStyle = lipgloss.NewStyle()
+var itemLengthStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#5e5e5e"))
+var cursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#f43f5e")).Bold(true)
 
-	m.docStyle = lipgloss.NewStyle().Margin(1, 2)
-	return m
+type KeyMap struct {
+	Up    key.Binding
+	Down  key.Binding
+	Left  key.Binding
+	Right key.Binding
+}
+
+var listNavigation = KeyMap{
+	Up: key.NewBinding(
+		key.WithKeys("k", "up"),
+		key.WithHelp("↑/k", "move up"),
+	),
+	Down: key.NewBinding(
+		key.WithKeys("j", "down"),
+		key.WithHelp("↓/j", "move down"),
+	),
+	Left: key.NewBinding(
+		key.WithKeys("h", "left", "pgup"),
+		key.WithHelp("←/h/pgdn", "move left"),
+	),
+	Right: key.NewBinding(
+		key.WithKeys("l", "right", "pgdn"),
+		key.WithHelp("→/l/pgup", "move right"),
+	),
 }
 
 func (m Model) Init() tea.Cmd {
@@ -40,21 +53,128 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	// case tea.KeyMsg:
-	// if msg.String() == "ctrl+c" {
-	// 	return m, tea.Quit
-	// }
-	case tea.WindowSizeMsg:
-		h, v := m.docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
+	var cmd tea.Cmd
+
+	if len(m.items) == 0 {
+		m.cursor = 0
+		m.paginator.Page = 0
+		return m, cmd
 	}
 
-	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
+	if m.paginator.Page*m.paginator.PerPage >= len(m.items) {
+		m.paginator.Page = (len(m.items) - 1) / m.paginator.PerPage
+	}
+
+	start, end := m.paginator.GetSliceBounds(len(m.items))
+	if start >= len(m.items) {
+		start = 0
+		m.paginator.Page = 0
+	}
+	if end > len(m.items) {
+		end = len(m.items)
+	}
+	currentPageItems := m.items[start:end]
+
+	if len(currentPageItems) == 0 {
+		m.cursor = 0
+	} else if m.cursor >= len(currentPageItems) {
+		m.cursor = len(currentPageItems) - 1
+	}
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, listNavigation.Up):
+			if m.cursor > 0 {
+				m.cursor--
+			} else {
+				if m.paginator.Page > 0 {
+					m.paginator.PrevPage()
+					start, end = m.paginator.GetSliceBounds(len(m.items))
+					m.cursor = len(m.items[start:end]) - 1
+				}
+			}
+		case key.Matches(msg, listNavigation.Down):
+			if m.cursor < len(currentPageItems)-1 {
+				m.cursor++
+			} else if m.paginator.Page < m.paginator.TotalPages-1 {
+				m.paginator.NextPage()
+				m.cursor = 0
+			}
+		}
+		switch msg.String() {
+		case "enter":
+			start, end := m.paginator.GetSliceBounds(len(m.items))
+			if start >= len(m.items) {
+				start = 0
+				m.paginator.Page = 0
+			}
+			if end > len(m.items) {
+				end = len(m.items)
+			}
+			currentPageItems := m.items[start:end]
+			if len(currentPageItems) > 0 {
+				m.OutputChan <- currentPageItems[m.cursor]
+			}
+		}
+	}
+
+	m.paginator, cmd = m.paginator.Update(msg)
 	return m, cmd
 }
 
 func (m Model) View() string {
-	return m.docStyle.Render(m.list.View())
+	if len(m.items) == 0 {
+		return "No notes found!"
+	}
+
+	var b strings.Builder
+	b.WriteString(itemLengthStyle.Render(fmt.Sprintf("%d notes", len(m.items))) + "\n\n")
+	start, end := m.paginator.GetSliceBounds(len(m.items))
+	if start >= len(m.items) {
+		start = 0
+	}
+	if end > len(m.items) {
+		end = len(m.items)
+	}
+
+	var liView strings.Builder
+	displayItems := m.items[start:end]
+
+	for i, item := range displayItems {
+		cursor := " "
+		if m.cursor == i {
+			cursor = cursorStyle.Render(">")
+		}
+
+		liView.WriteString(fmt.Sprintf("%s %s\n", cursor, item.Content))
+	}
+
+	b.WriteString(listContainerStyle.Render(liView.String()))
+	if len(displayItems) > 10 {
+		b.WriteString("\n  " + m.paginator.View())
+	}
+
+	return b.String()
+}
+
+func (m *Model) SetItems(items []notes.Note) {
+	m.items = items
+	m.paginator.SetTotalPages(len(items))
+}
+
+func NewModel() Model {
+	pagi := paginator.New()
+	pagi.PerPage = 10
+	pagi.Type = paginator.Dots
+	pagi.ActiveDot = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(252)).Render("•")
+	pagi.InactiveDot = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(238)).Render("•")
+	pagi.SetTotalPages(0)
+
+	return Model{
+		items:      []notes.Note{},
+		cursor:     0,
+		paginator:  pagi,
+		OutputChan: make(chan notes.Note),
+	}
 }

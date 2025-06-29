@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/muesli/reflow/wordwrap"
 
 	"github.com/yagnik-patel-47/flashback/internal/components/notelist"
 	"github.com/yagnik-patel-47/flashback/internal/components/spinner"
@@ -14,12 +15,20 @@ import (
 	"github.com/yagnik-patel-47/flashback/internal/notes"
 )
 
+var (
+	primaryBackground = lipgloss.NewStyle().Background(lipgloss.Color("#5b6b6d")).Padding(0, 1)
+	dangerBackground  = lipgloss.NewStyle().Background(lipgloss.Color("#9f1239")).Padding(0, 1)
+	successStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#86AF80"))
+	mainViewStyles    = lipgloss.NewStyle().Margin(1, 2)
+)
+
 type Model struct {
 	mode         string
 	textarea     textarea.Model
 	spinner      spinner.Model
 	notelist     notelist.Model
 	notes        notes.Store
+	width        int
 	showFeedback bool
 	loading      bool
 	output       string
@@ -33,11 +42,12 @@ func InitModel(db *sql.DB) Model {
 		notelist: notelist.NewModel(),
 		output:   "",
 		notes:    *notes.NewStore(db),
+		width:    0,
 	}
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(tea.SetWindowTitle("flashback"), m.textarea.Init(), m.spinner.Init(), readInput(m.textarea.InputChan))
+	return tea.Batch(tea.SetWindowTitle("flashback"), m.textarea.Init(), m.spinner.Init(), readInput(m.textarea.OutputChan), readDeleteInput(m, m.notelist.OutputChan))
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -87,12 +97,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, recallCmd(m, content))
 		}
 
-		cmds = append(cmds, readInput(m.textarea.InputChan))
+		cmds = append(cmds, readInput(m.textarea.OutputChan))
+
+	case notesMsg:
+		notes := []notes.Note(msg)
+		m.notelist.SetItems(notes)
+
+	case deleteNoteMsg:
+		success := bool(msg)
+		if success {
+			cmds = append(cmds, getNotesCmd(m))
+		}
+		cmds = append(cmds, readDeleteInput(m, m.notelist.OutputChan))
+
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
-		case "esc":
+		case "tab":
 			m.showFeedback = false
 			if !m.loading {
 				switch m.mode {
@@ -108,23 +130,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		}
+
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+
 	}
 
-	m.textarea, cmd = m.textarea.Update(msg)
-	cmds = append(cmds, cmd)
-	m.spinner, cmd = m.spinner.Update(msg)
-	cmds = append(cmds, cmd)
-	m.notelist, cmd = m.notelist.Update(msg)
-	cmds = append(cmds, cmd)
+	if m.mode == "note" || m.mode == "recall" {
+		m.textarea, cmd = m.textarea.Update(msg)
+		cmds = append(cmds, cmd)
+		m.spinner, cmd = m.spinner.Update(msg)
+		cmds = append(cmds, cmd)
+	} else {
+		m.notelist, cmd = m.notelist.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 	return m, tea.Batch(cmds...)
 }
-
-var (
-	primaryBackground = lipgloss.NewStyle().Background(lipgloss.Color("#5b6b6d")).Padding(0, 1)
-	dangerBackground  = lipgloss.NewStyle().Background(lipgloss.Color("#9f1239")).Padding(0, 1)
-	successStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#86AF80"))
-	mainViewStyles    = lipgloss.NewStyle().Margin(1, 2)
-)
 
 func (m Model) View() string {
 	header := "⚡Flashback"
@@ -148,10 +170,11 @@ func (m Model) View() string {
 		}
 	}
 	if m.showFeedback {
+		wrappedOutput := wordwrap.String(m.output, m.width-4)
 		if m.mode == "note" {
-			tui.WriteString(successStyle.Render(m.output) + "\n\n")
+			tui.WriteString(successStyle.Render(wrappedOutput) + "\n\n")
 		} else {
-			tui.WriteString(m.output + "\n\n")
+			tui.WriteString(wrappedOutput + "\n\n")
 		}
 	}
 

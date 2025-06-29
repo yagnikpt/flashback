@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"google.golang.org/genai"
 )
@@ -89,7 +90,7 @@ func (s *Store) Recall(userQuery string) (string, error) {
 		return "", err
 	}
 
-	query := `SELECT notes.id, notes.title, notes.content FROM notes JOIN embeddings ON notes.id = embeddings.note_id ORDER BY
+	query := `SELECT notes.id, notes.title, notes.content, notes.created_at FROM notes JOIN embeddings ON notes.id = embeddings.note_id ORDER BY
        vector_distance_cos(embeddings.vector, vector32(?))
     ASC LIMIT 3`
 
@@ -99,21 +100,15 @@ func (s *Store) Recall(userQuery string) (string, error) {
 	}
 	defer rows.Close()
 
-	type Note struct {
-		ID      string
-		Title   string
-		Content string
-	}
-
-	var notes []Note
+	var fetchedNotes []Note
 
 	for rows.Next() {
 		note := Note{}
-		err = rows.Scan(&note.ID, &note.Title, &note.Content)
+		err = rows.Scan(&note.ID, &note.Title, &note.Content, &note.CreatedAt)
 		if err != nil {
 			return "", err
 		}
-		notes = append(notes, note)
+		fetchedNotes = append(fetchedNotes, note)
 	}
 	if err = rows.Err(); err != nil {
 		return "", err
@@ -121,11 +116,13 @@ func (s *Store) Recall(userQuery string) (string, error) {
 
 	notesContext := strings.Builder{}
 	notesContext.WriteString("\n\nUser notes:\n")
-	for _, note := range notes {
-		notesContext.WriteString(fmt.Sprintf("- %s\n", note.Content))
+	loc, _ := time.LoadLocation("Local")
+	for _, note := range fetchedNotes {
+		notesContext.WriteString(fmt.Sprintf("- %s - timestamp: %s\n", note.Content, note.CreatedAt.In(loc).Format("2006-01-02 15:04")))
 	}
 
 	finalInput := "User query: " + userQuery + notesContext.String()
+	// log.Println(finalInput)
 
 	data, err := os.ReadFile("internal/notes/system_prompt.txt")
 	if err != nil {
@@ -149,6 +146,7 @@ func (s *Store) Recall(userQuery string) (string, error) {
 	log.Println(response.Text())
 
 	return response.Text(), nil
+	// return "", nil
 }
 
 func (s *Store) GetAllNotes() (notes []Note, e error) {
