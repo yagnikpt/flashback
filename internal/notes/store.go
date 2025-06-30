@@ -18,8 +18,10 @@ type Store struct {
 	genai *genai.Client
 }
 
-func NewStore(db *sql.DB) *Store {
-	client, err := genai.NewClient(context.Background(), &genai.ClientConfig{})
+func NewStore(db *sql.DB, apiKey string) *Store {
+	client, err := genai.NewClient(context.Background(), &genai.ClientConfig{
+		APIKey: apiKey,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}

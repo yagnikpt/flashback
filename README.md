@@ -10,7 +10,7 @@ A powerful command-line tool that serves as your second memory, intelligently st
 - **Intelligent Recall**: Get contextually relevant responses based on your stored notes
 - **Timestamp-Aware**: Automatically tracks when notes were created with human-friendly time formatting
 
-### 🎯 Three Powerful Modes
+### 🎯 Three Modes
 1. **Note Mode**: Quickly capture thoughts, ideas, and information
 2. **Recall Mode**: Query your notes using natural language to get intelligent summaries
 3. **Delete Mode**: Browse and manage your existing notes with easy deletion
@@ -24,7 +24,6 @@ A powerful command-line tool that serves as your second memory, intelligently st
 ### 🔒 Privacy & Performance
 - **Local Storage**: All notes stored locally in SQLite database
 - **Fast Retrieval**: Vector similarity search for lightning-fast note matching
-- **Offline First**: Works without internet connection (after initial AI setup)
 - **Cross-Platform**: Runs on Linux, macOS, and Windows
 
 ## 🚀 Installation
@@ -62,7 +61,7 @@ git clone https://github.com/yagnik-patel-47/flashback.git
 cd flashback
 
 # Install dependencies
-go mod tidy
+make tidy
 
 # Run without building
 make run
@@ -72,21 +71,7 @@ make run
 
 ### Setting up Google AI API
 1. Get your API key from [Google AI Studio](https://aistudio.google.com/apikey)
-2. Set the environment variable:
-   - Linux, Mac
-   ```bash
-   export GOOGLE_API_KEY="your-api-key-here"
-   ```
-   - Powershell
-   ```pwsh
-   $Env:GOOGLE_API_KEY = "your-api-key-here"
-   ```
-3. Set permannent environment variable:
-   - Linux, Mac
-   edit `.bashrc` or `.zshrc` or your terminal config and add the above line
-   - Powershell
-   run `notepad $PROFILE` and add the above line
-
+2. Set the API key in the initial screen of the application.
 
 ## 🎮 Usage
 
@@ -173,82 +158,8 @@ We welcome contributions from the community! Here's how you can help:
    git checkout -b feature/your-feature-name
    ```
 
-### Development Guidelines
-
-#### Code Style
-- Follow standard Go conventions (`go fmt`, `go vet`)
-- Use meaningful variable and function names
-- Add comments for exported functions and complex logic
-- Keep functions small and focused
-
-#### Testing
-- Write unit tests for new functionality
-- Ensure existing tests pass: `go test ./...`
-- Test the TUI manually across different terminal sizes
-
-#### Commit Messages
-Use conventional commit format:
-```
-type(scope): description
-
-feat(notes): add export functionality
-fix(ui): resolve textarea resize issue
-docs(readme): update installation instructions
-```
-
-### Types of Contributions
-
-#### 🐛 Bug Reports
-- Use the issue template
-- Include steps to reproduce
-- Provide system information (OS, terminal, Go version)
-- Include logs from `debug.log` if applicable
-
-#### ✨ Feature Requests
-- Describe the problem you're solving
-- Provide clear use cases
-- Consider backward compatibility
-- Discuss implementation approach
-
-#### 🔧 Code Contributions
-- **UI/UX Improvements**: Better styling, new components, accessibility
-- **Performance**: Query optimization, faster embeddings, memory usage
-- **Features**: Export/import, note categories, search filters
-- **Integrations**: Other AI providers, cloud storage, sync
-
-#### 📚 Documentation
-- README improvements
-- Code comments and documentation
-- Usage examples and tutorials
-- API documentation
-
-### Pull Request Process
-
-1. **Update documentation** if needed
-2. **Add or update tests** for your changes
-3. **Ensure all tests pass**
-4. **Update CHANGELOG.md** with your changes
-5. **Submit pull request** with clear description
-
-#### PR Template
-```markdown
-## Description
-Brief description of changes
-
-## Type of Change
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Documentation update
-- [ ] Performance improvement
-
-## Testing
-- [ ] Unit tests added/updated
-- [ ] Manual testing completed
-- [ ] No regressions introduced
-
-## Screenshots (if applicable)
+## Screenshots
 Add screenshots for UI changes
-```
 
 ### Development Environment
 

@@ -37,8 +37,10 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "enter":
-			m.OutputChan <- m.textarea.Value()
-			m.textarea.SetValue("")
+			if m.textarea.Value() != "" {
+				m.OutputChan <- m.textarea.Value()
+				m.textarea.SetValue("")
+			}
 		}
 
 	// We handle errors just like any other message

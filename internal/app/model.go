@@ -8,9 +8,11 @@ import (
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/muesli/reflow/wordwrap"
 
+	"github.com/yagnik-patel-47/flashback/internal/components/help"
 	"github.com/yagnik-patel-47/flashback/internal/components/notelist"
 	"github.com/yagnik-patel-47/flashback/internal/components/spinner"
 	"github.com/yagnik-patel-47/flashback/internal/components/textarea"
+	"github.com/yagnik-patel-47/flashback/internal/config"
 
 	"github.com/yagnik-patel-47/flashback/internal/notes"
 )
@@ -27,22 +29,28 @@ type Model struct {
 	textarea     textarea.Model
 	spinner      spinner.Model
 	notelist     notelist.Model
+	help         help.Model
 	notes        notes.Store
 	width        int
+	height       int
 	showFeedback bool
 	loading      bool
 	output       string
+	config       config.Config
 }
 
-func InitModel(db *sql.DB) Model {
+func InitModel(db *sql.DB, config config.Config) Model {
 	return Model{
 		mode:     "note",
 		textarea: textarea.NewModel(),
 		spinner:  spinner.NewModel(),
 		notelist: notelist.NewModel(),
+		help:     help.NewModel(),
 		output:   "",
-		notes:    *notes.NewStore(db),
+		notes:    *notes.NewStore(db, config.APIKey),
 		width:    0,
+		height:   0,
+		config:   config,
 	}
 }
 
@@ -112,7 +120,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
-		case "ctrl+c":
+		case "ctrl+c", "esc":
 			return m, tea.Quit
 		case "tab":
 			m.showFeedback = false
@@ -120,20 +128,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				switch m.mode {
 				case "note":
 					m.mode = "recall"
+					m.help.SetMode(m.mode)
 					m.textarea.SetPlaceholder("Enter query to recall...")
 				case "recall":
 					cmds = append(cmds, getNotesCmd(m))
 					m.mode = "delete"
+					m.help.SetMode(m.mode)
 				case "delete":
 					m.mode = "note"
+					m.help.SetMode(m.mode)
 					m.textarea.SetPlaceholder("Enter the note...")
 				}
 			}
+		case "alt+?":
+			if m.config.ShowHelp {
+				m.config.ShowHelp = false
+			} else {
+				m.config.ShowHelp = true
+			}
+			cmds = append(cmds, saveConfigCmd(m))
 		}
 
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
-
+		m.height = msg.Height
 	}
 
 	if m.mode == "note" || m.mode == "recall" {
@@ -143,6 +161,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	} else {
 		m.notelist, cmd = m.notelist.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+	if m.config.ShowHelp {
+		m.help, cmd = m.help.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 	return m, tea.Batch(cmds...)
@@ -177,6 +199,14 @@ func (m Model) View() string {
 			tui.WriteString(wrappedOutput + "\n\n")
 		}
 	}
+
+	// if m.height != 0 {
+	// voidLines := m.height - 2 - strings.Count(tui.String(), "\n") - strings.Count(m.help.View(), "\n") - 1
+
+	if m.config.ShowHelp {
+		tui.WriteString(strings.Repeat("\n", 5) + m.help.View())
+	}
+	// }
 
 	return mainViewStyles.Render(tui.String())
 }

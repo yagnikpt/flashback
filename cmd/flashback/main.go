@@ -6,22 +6,34 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 
 	_ "github.com/tursodatabase/go-libsql"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 
 	"github.com/yagnik-patel-47/flashback/internal/app"
+	"github.com/yagnik-patel-47/flashback/internal/components/apiprompt"
+	"github.com/yagnik-patel-47/flashback/internal/config"
 	"github.com/yagnik-patel-47/flashback/internal/migration"
+	"github.com/yagnik-patel-47/flashback/internal/utils"
 )
 
 func main() {
-	dataDir, err := getLocalDataDir()
-	// fmt.Println("Data directory:", dataDir)
-	// os.Exit(0)
+	dataDir, err := utils.GetLocalDataDir()
 	if err != nil {
 		fmt.Println("Error getting local data directory:", err)
+		os.Exit(1)
+	}
+
+	configDir, err := utils.GetConfigDir()
+	if err != nil {
+		fmt.Println("Error getting local data directory:", err)
+		os.Exit(1)
+	}
+	configFile := filepath.Join(configDir, "config.toml")
+	cfg, err := config.LoadConfig(configFile)
+	if err != nil {
+		fmt.Println("Error loading config:", err)
 		os.Exit(1)
 	}
 
@@ -43,51 +55,29 @@ func main() {
 		log.Fatal(err)
 	}
 
-	p := tea.NewProgram(app.InitModel(db), tea.WithAltScreen(), tea.WithKeyboardEnhancements())
-	_, err = p.Run()
-	if err != nil {
-		fmt.Printf("Alas, there's been an error: %v", err)
-		os.Exit(1)
-	}
-}
-
-func getLocalDataDir() (string, error) {
-	appName := "flashback"
-
-	var dataDir string
-	var err error
-
-	switch runtime.GOOS {
-	case "darwin":
-		homeDir, err := os.UserHomeDir()
+	if cfg.APIKey == "" {
+		p := tea.NewProgram(apiprompt.NewModel(), tea.WithAltScreen())
+		res, err := p.Run()
 		if err != nil {
-			fmt.Println("Error getting user home directory:", err)
-			return "", err
+			fmt.Printf("Alas, there's been an error: %v", err)
+			os.Exit(1)
 		}
-		dataDir = filepath.Join(homeDir, "Library", "Application Support")
-	case "linux":
-		homeDir, err := os.UserHomeDir()
+		model := res.(apiprompt.Model)
+		apiKey := model.Output
+		cfg.APIKey = apiKey
+		err = config.SaveConfig(configFile, cfg)
 		if err != nil {
-			fmt.Println("Error getting user home directory:", err)
-			return "", err
+			fmt.Println("Error saving config:", err)
+			os.Exit(1)
 		}
-		dataDir = filepath.Join(homeDir, ".local", "share")
-
-	case "windows":
-		dataDir = os.Getenv("LocalAppData")
-		if dataDir == "" {
-			return "", fmt.Errorf("error: %%LocalAppData%% environment variable not found")
-		}
-	default:
-		return "", fmt.Errorf("unsupported operating system: %s", runtime.GOOS)
 	}
 
-	appDataDir := filepath.Join(dataDir, appName)
-
-	err = os.MkdirAll(appDataDir, 0755)
-	if err != nil {
-		return "", fmt.Errorf("error creating app data directory: %w", err)
+	if len(cfg.APIKey) != 0 {
+		p := tea.NewProgram(app.InitModel(db, cfg), tea.WithAltScreen(), tea.WithKeyboardEnhancements())
+		_, err = p.Run()
+		if err != nil {
+			fmt.Printf("Alas, there's been an error: %v", err)
+			os.Exit(1)
+		}
 	}
-
-	return appDataDir, nil
 }

@@ -151,7 +151,7 @@ func (m Model) View() string {
 	}
 
 	b.WriteString(listContainerStyle.Render(liView.String()))
-	if len(displayItems) > 10 {
+	if len(m.items) > 10 {
 		b.WriteString("\n  " + m.paginator.View())
 	}
 

@@ -2,9 +2,12 @@ package app
 
 import (
 	"log"
+	"path/filepath"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/yagnik-patel-47/flashback/internal/config"
 	"github.com/yagnik-patel-47/flashback/internal/notes"
+	"github.com/yagnik-patel-47/flashback/internal/utils"
 )
 
 type inputMsg string
@@ -64,13 +67,15 @@ func getNotesCmd(m Model) tea.Cmd {
 	}
 }
 
-func deleteNoteCmd(m Model, id int) tea.Cmd {
+func saveConfigCmd(m Model) tea.Cmd {
 	return func() tea.Msg {
-		err := m.notes.DeleteNote(id)
+		configDir, _ := utils.GetConfigDir()
+		configFile := filepath.Join(configDir, "config.toml")
+		err := config.SaveConfig(configFile, m.config)
 		if err != nil {
-			log.Println("Error deleting note:", err)
-			return deleteNoteMsg(false)
+			log.Println("Error saving config:", err)
+			// return saveConfigMsg(false)
 		}
-		return deleteNoteMsg(true)
+		return nil
 	}
 }
