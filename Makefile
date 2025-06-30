@@ -10,7 +10,7 @@ all: build
 # Build the binary
 .PHONY: build
 build:
-	go build $(GOFLAGS) -o $(BINARY_NAME) $(SRC_DIR) main.go
+	go build $(GOFLAGS) -o $(BINARY_NAME) $(SRC_DIR)
 
 # Run the application
 .PHONY: run

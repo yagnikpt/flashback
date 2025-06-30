@@ -6,6 +6,7 @@ require (
 	github.com/charmbracelet/bubbles/v2 v2.0.0-beta.1
 	github.com/charmbracelet/bubbletea/v2 v2.0.0-beta.3
 	github.com/charmbracelet/lipgloss/v2 v2.0.0-beta.1
+	github.com/muesli/reflow v0.3.0
 	github.com/pressly/goose/v3 v3.24.3
 	github.com/tursodatabase/go-libsql v0.0.0-20250609073118-9c24e0e7fa97
 	google.golang.org/genai v1.13.0
@@ -33,7 +34,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
-	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
