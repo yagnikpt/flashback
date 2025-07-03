@@ -2,6 +2,9 @@
 
 A powerful command-line tool that serves as your second memory, intelligently storing and retrieving your notes using AI-powered semantic search. Never lose track of important information again!
 
+## Demo
+[Demo GIF](demo.gif)
+
 ## ✨ Features
 
 ### 🧠 AI-Powered Note Management
@@ -165,5 +168,6 @@ Add screenshots for UI changes
 #### Required Tools
 - Go 1.24.4+
 - Git
+- C compiler
 - Your favorite terminal
 - Text editor with Go support

@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/v2/paginator"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/muesli/reflow/wordwrap"
 	"github.com/yagnik-patel-47/flashback/internal/notes"
 )
 
@@ -15,7 +16,12 @@ type Model struct {
 	items      []notes.Note
 	cursor     int
 	paginator  paginator.Model
+	width      int
 	OutputChan chan notes.Note
+}
+
+func (m *Model) SetWidth(width int) {
+	m.width = width
 }
 
 var listContainerStyle = lipgloss.NewStyle()
@@ -146,8 +152,10 @@ func (m Model) View() string {
 		if m.cursor == i {
 			cursor = cursorStyle.Render(">")
 		}
+		content := wordwrap.String(item.Content, m.width-6)
+		content = strings.Replace(content, "\n", "\n  ", -1)
 
-		liView.WriteString(fmt.Sprintf("%s %s\n", cursor, item.Content))
+		liView.WriteString(fmt.Sprintf("%s %s\n", cursor, content))
 	}
 
 	b.WriteString(listContainerStyle.Render(liView.String()))
@@ -176,5 +184,6 @@ func NewModel() Model {
 		cursor:     0,
 		paginator:  pagi,
 		OutputChan: make(chan notes.Note),
+		width:      0,
 	}
 }
