@@ -157,8 +157,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.mode == "note" || m.mode == "recall" {
 		m.textarea, cmd = m.textarea.Update(msg)
 		cmds = append(cmds, cmd)
-		m.spinner, cmd = m.spinner.Update(msg)
-		cmds = append(cmds, cmd)
 	} else {
 		m.notelist, cmd = m.notelist.Update(msg)
 		cmds = append(cmds, cmd)
@@ -167,6 +165,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.help, cmd = m.help.Update(msg)
 		cmds = append(cmds, cmd)
 	}
+	m.spinner, cmd = m.spinner.Update(msg)
+	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 

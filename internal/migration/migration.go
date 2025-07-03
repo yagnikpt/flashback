@@ -12,6 +12,7 @@ var sqlMigrations embed.FS
 
 func Migrate(db *sql.DB) error {
 	goose.SetBaseFS(sqlMigrations)
+	goose.SetLogger(goose.NopLogger())
 
 	if err := goose.SetDialect("turso"); err != nil {
 		return err

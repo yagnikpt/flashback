@@ -1,5 +1,6 @@
 # Variables
 BINARY_NAME=flashback
+PACKAGE_NAME          := github.com/yagnik-patel-47/flashback
 SRC_DIR=./cmd/flashback
 GOFLAGS=-ldflags="-s -w"
 GOLANG_CROSS_VERSION  ?= v1.24.4
@@ -28,5 +29,10 @@ release-dry-run:
 	@podman run \
 		--rm \
 		-e CGO_ENABLED=1 \
+		-e GOCACHE=/tmp/.cache \
+		-v /run/user/1000/podman/podman.sock:/run/user/1000/podman/podman.sock \
+		-v `pwd`:/go/src/$(PACKAGE_NAME):Z \
+		-v `pwd`/.cache:/tmp/.cache:Z \
+		-w /go/src/$(PACKAGE_NAME) \
 		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
-		--clean --skip=validate --skip=publish
+		release --clean --skip=validate --skip=publish --snapshot

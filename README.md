@@ -31,6 +31,7 @@ A powerful command-line tool that serves as your second memory, intelligently st
 ### Prerequisites
 - Go 1.24.4 or later
 - Google AI API key (for Gemini embeddings)
+- C compiler (go-libsql uses CGO)
 
 ### Option 1: Build from Source
 ```bash
@@ -116,16 +117,14 @@ Response: "John discussed Q3 project timeline with key deliverables due by July 
 ### Project Structure
 ```
 flashback/
-├── cmd/flashback/          # Main application entry point
+├── cmd/flashback/         # Main application entry point
 ├── internal/
 │   ├── app/               # Core application logic and TUI models
 │   ├── components/        # Reusable UI components
-│   │   ├── notelist/      # Notes list component
-│   │   ├── spinner/       # Loading spinner component
-│   │   └── textarea/      # Text input component
 │   ├── migration/         # Database migrations
-│   └── notes/            # Notes business logic and AI integration
-├── Makefile              # Build and development commands
+│   ├── notes/             # Notes business logic and AI integration
+│   └── config/            # Config save and load helpers
+├── Makefile               # Build and development commands
 └── README.md
 ```
 

@@ -79,7 +79,6 @@ func NewModel() Model {
 	model.Placeholder = "Enter the note..."
 
 	model.Focus()
-	// model.Cursor().Blink = true
 
 	model.Prompt = "┃ "
 	model.CharLimit = defaultCharLimit
