@@ -3,7 +3,7 @@
 A powerful command-line tool that serves as your second memory, intelligently storing and retrieving your notes using AI-powered semantic search. Never lose track of important information again!
 
 ## Demo
-[Demo GIF](demo.gif)
+![Demo GIF](demo.gif)
 
 ## ✨ Features
 
@@ -80,25 +80,7 @@ make run
 ## 🎮 Usage
 
 ### Basic Navigation
-- **Tab**: Switch between modes (Note → Recall → Delete → Note)
-- **Enter**: Submit input or select item
-- **Ctrl+C**: Exit the application
-- **↑/↓ or j/k**: Navigate through notes in delete mode
-
-### Note Mode
-1. Type your note in the textarea
-2. Press **Enter** to save
-3. Get confirmation feedback
-
-### Recall Mode
-1. Enter a natural language query
-2. Press **Enter** to search
-3. Get AI-generated summary of relevant notes
-
-### Delete Mode
-1. Browse through all your notes
-2. Use arrow keys or j/k to navigate
-3. Press **Enter** to delete selected note
+- **Alt+?**: Toggle keys helper visibility
 
 ### Example Workflows
 
@@ -144,24 +126,20 @@ make run      # Run in development mode
 make tidy     # Clean up dependencies
 ```
 
-## 🤝 Contributing
+## 🔮 Future Features
 
-We welcome contributions from the community! Here's how you can help:
+### 🌐 Web Content Integration
+- **Content Scraping**: Extract information directly from web pages to load context into notes
+- **URL Processing**: Automatically detect URLs and generate summaries
 
-### Getting Started
-1. **Fork the repository** on GitHub
-2. **Clone your fork** locally:
-   ```bash
-   git clone https://github.com/yagnik-patel-47/flashback.git
-   cd flashback
-   ```
-3. **Create a feature branch**:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+### 📁 Attach Local Files
+- **File Parsing**: Import and extract information from local files (PDF, TXT, DOCX, etc.)
+- **Directory Indexing**: Recursively scan directories to build a knowledge base from your files
 
-## Screenshots
-Add screenshots for UI changes
+### ⏰ Smart Notifications
+- **Time & Date Extraction**: Automatically identify dates and times mentioned in your notes
+- **Notification System**: Run as a daemon to alert you about upcoming events extracted from notes
+- **Custom Reminders**: Set specific notification preferences for different types of information
 
 ### Development Environment
 
