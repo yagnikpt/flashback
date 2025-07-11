@@ -3,6 +3,7 @@ package notelist
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/v2/key"
 	"github.com/charmbracelet/bubbles/v2/paginator"
@@ -10,22 +11,25 @@ import (
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/yagnik-patel-47/flashback/internal/notes"
+	"github.com/yagnik-patel-47/flashback/internal/utils"
 )
 
 type Model struct {
-	items      []notes.Note
+	items      []notes.CombinedNote
 	cursor     int
 	paginator  paginator.Model
 	width      int
-	OutputChan chan notes.Note
+	height     int
+	OutputChan chan notes.CombinedNote
 }
 
-func (m *Model) SetWidth(width int) {
+func (m *Model) SetDimensions(width, height int) {
 	m.width = width
+	m.height = height
 }
 
 var listContainerStyle = lipgloss.NewStyle()
-var itemLengthStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#5e5e5e"))
+var lightTextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#5e5e5e"))
 var cursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#f43f5e")).Bold(true)
 
 type KeyMap struct {
@@ -129,13 +133,15 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	return m, cmd
 }
 
+var loc, _ = time.LoadLocation("Local")
+
 func (m Model) View() string {
 	if len(m.items) == 0 {
 		return "No notes found!"
 	}
 
 	var b strings.Builder
-	b.WriteString(itemLengthStyle.Render(fmt.Sprintf("%d notes", len(m.items))) + "\n\n")
+	b.WriteString(lightTextStyle.Render(fmt.Sprintf("%d notes", len(m.items))) + "\n\n")
 	start, end := m.paginator.GetSliceBounds(len(m.items))
 	if start >= len(m.items) {
 		start = 0
@@ -153,37 +159,39 @@ func (m Model) View() string {
 			cursor = cursorStyle.Render(">")
 		}
 		content := wordwrap.String(item.Content, m.width-6)
-		content = strings.Replace(content, "\n", "\n  ", -1)
+		content = strings.ReplaceAll(content, "\n", "\n  ")
+		relativeTime := utils.RelativeTime(item.CreatedAt.In(loc))
 
-		liView.WriteString(fmt.Sprintf("%s %s\n", cursor, content))
+		liView.WriteString(fmt.Sprintf("%s %s\n  %s\n\n", cursor, content, lightTextStyle.Render(relativeTime)))
 	}
 
 	b.WriteString(listContainerStyle.Render(liView.String()))
-	if len(m.items) > 10 {
-		b.WriteString("\n  " + m.paginator.View())
+	if len(m.items) > 5 {
+		b.WriteString("  " + m.paginator.View())
 	}
 
 	return b.String()
 }
 
-func (m *Model) SetItems(items []notes.Note) {
+func (m *Model) SetItems(items []notes.CombinedNote) {
 	m.items = items
 	m.paginator.SetTotalPages(len(items))
 }
 
 func NewModel() Model {
 	pagi := paginator.New()
-	pagi.PerPage = 10
+	pagi.PerPage = 5
 	pagi.Type = paginator.Dots
 	pagi.ActiveDot = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(252)).Render("•")
 	pagi.InactiveDot = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(238)).Render("•")
 	pagi.SetTotalPages(0)
 
 	return Model{
-		items:      []notes.Note{},
+		items:      []notes.CombinedNote{},
 		cursor:     0,
 		paginator:  pagi,
-		OutputChan: make(chan notes.Note),
+		OutputChan: make(chan notes.CombinedNote),
 		width:      0,
+		height:     0,
 	}
 }

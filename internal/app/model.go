@@ -55,7 +55,7 @@ func InitModel(db *sql.DB, config config.Config) Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(tea.SetWindowTitle("flashback"), m.textarea.Init(), m.spinner.Init(), readInput(m.textarea.OutputChan), readDeleteInput(m, m.notelist.OutputChan))
+	return tea.Batch(tea.SetWindowTitle("flashback"), m.textarea.Init(), m.spinner.Init(), readInput(m.textarea.OutputChan), readDeleteInput(m, m.notelist.OutputChan), readStatusText(m.notes.StatusChan))
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -108,7 +108,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, readInput(m.textarea.OutputChan))
 
 	case notesMsg:
-		notes := []notes.Note(msg)
+		notes := []notes.CombinedNote(msg)
 		m.notelist.SetItems(notes)
 
 	case deleteNoteMsg:
@@ -117,6 +117,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, getNotesCmd(m))
 		}
 		cmds = append(cmds, readDeleteInput(m, m.notelist.OutputChan))
+
+	case statusMsg:
+		status := string(msg)
+		m.spinner.SetDisplayText(status)
+		cmds = append(cmds, readStatusText(m.notes.StatusChan))
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -130,6 +135,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.mode = "recall"
 					m.help.SetMode(m.mode)
 					m.textarea.SetPlaceholder("Enter query to recall...")
+					m.textarea.SetHeight(3)
 				case "recall":
 					cmds = append(cmds, getNotesCmd(m))
 					m.mode = "delete"
@@ -138,6 +144,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.mode = "note"
 					m.help.SetMode(m.mode)
 					m.textarea.SetPlaceholder("Enter the note...")
+					m.textarea.SetHeight(5)
 				}
 			}
 		case "alt+?":
@@ -151,8 +158,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
-		m.notelist.SetWidth(msg.Width)
 		m.height = msg.Height
+		m.notelist.SetDimensions(msg.Width, msg.Height)
+		m.spinner.SetWidth(msg.Width)
 	}
 
 	if m.mode == "note" || m.mode == "recall" {

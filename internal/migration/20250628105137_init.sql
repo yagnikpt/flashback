@@ -1,16 +1,14 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS notes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    content TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS embeddings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    note_id INTEGER NOT NULL,
+    chunk_id INTEGER NOT NULL,
     vector F32_BLOB (768) NOT NULL,
-    FOREIGN KEY (note_id) REFERENCES notes (id) ON DELETE CASCADE
+    FOREIGN KEY (chunk_id) REFERENCES chunks (id) ON DELETE CASCADE
 );
 
 -- +goose Down

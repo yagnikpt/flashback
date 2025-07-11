@@ -13,8 +13,9 @@ import (
 type inputMsg string
 type noteAddedMsg bool
 type recallMsg string
-type notesMsg []notes.Note
+type notesMsg []notes.CombinedNote
 type deleteNoteMsg bool
+type statusMsg string
 
 func readInput(ch <-chan string) tea.Cmd {
 	return func() tea.Msg {
@@ -22,7 +23,7 @@ func readInput(ch <-chan string) tea.Cmd {
 	}
 }
 
-func readDeleteInput(m Model, ch <-chan notes.Note) tea.Cmd {
+func readDeleteInput(m Model, ch <-chan notes.CombinedNote) tea.Cmd {
 	return func() tea.Msg {
 		note := <-ch
 		err := m.notes.DeleteNote(note.ID)
@@ -31,6 +32,13 @@ func readDeleteInput(m Model, ch <-chan notes.Note) tea.Cmd {
 			return deleteNoteMsg(false)
 		}
 		return deleteNoteMsg(true)
+	}
+}
+
+func readStatusText(ch <-chan string) tea.Cmd {
+	return func() tea.Msg {
+		status := <-ch
+		return statusMsg(status)
 	}
 }
 

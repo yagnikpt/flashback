@@ -8,14 +8,18 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/yagnik-patel-47/flashback/internal/scraper"
+	"github.com/yagnik-patel-47/flashback/internal/utils"
 	"google.golang.org/genai"
 )
 
 type Store struct {
-	db    *sql.DB
-	genai *genai.Client
+	db         *sql.DB
+	genai      *genai.Client
+	StatusChan chan string
 }
 
 func NewStore(db *sql.DB, apiKey string) *Store {
@@ -25,49 +29,163 @@ func NewStore(db *sql.DB, apiKey string) *Store {
 	if err != nil {
 		log.Fatal(err)
 	}
+	statusChan := make(chan string)
 
 	return &Store{
-		db:    db,
-		genai: client,
+		db:         db,
+		genai:      client,
+		StatusChan: statusChan,
 	}
 }
 
 func (s *Store) CreateNote(content string) error {
 	ctx := context.Background()
 
-	query := `INSERT INTO notes (title, content) VALUES (?, ?) RETURNING id`
+	query := `INSERT INTO notes DEFAULT VALUES RETURNING id`
 	var noteID int
-	err := s.db.QueryRow(query, "", content).Scan(&noteID)
+	err := s.db.QueryRow(query).Scan(&noteID)
 	if err != nil {
 		return err
 	}
 
-	contents := []*genai.Content{
-		genai.NewContentFromText(content, genai.RoleUser),
-	}
-	result, err := s.genai.Models.EmbedContent(ctx,
-		"gemini-embedding-exp-03-07",
-		contents,
-		&genai.EmbedContentConfig{
-			TaskType:             "RETRIEVAL_DOCUMENT",
-			OutputDimensionality: func(i int32) *int32 { return &i }(768),
-		},
-	)
-	if err != nil {
-		return err
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	errChan := make(chan error, 2)
+
+	go func() {
+		defer wg.Done()
+
+		config := &genai.GenerateContentConfig{
+			ResponseMIMEType: "application/json",
+			ResponseSchema: &genai.Schema{
+				Type: genai.TypeArray,
+				Items: &genai.Schema{
+					Type: genai.TypeObject,
+					Properties: map[string]*genai.Schema{
+						"title": {Type: genai.TypeString, Description: "The title to show in notification"},
+						"time":  {Type: genai.TypeString, Description: "The time mentioned for notification in format YYYY-MM-DD HH:MM AM/PM"},
+					},
+					PropertyOrdering: []string{"title", "time"},
+				},
+			},
+		}
+
+		result, err := s.genai.Models.GenerateContent(
+			ctx,
+			"gemini-2.5-flash",
+			genai.Text("Identify the time given in the provided note for using the time in notification. Current date and time is "+time.Now().Format("2006-01-02 15:04 PM.")+"\n\n"+"Note: "+content),
+			config,
+		)
+
+		if err != nil {
+			errChan <- fmt.Errorf("notification generation error: %w", err)
+			return
+		}
+
+		type Notification struct {
+			Title string `json:"title"`
+			Time  string `json:"time"`
+		}
+		var notifications []Notification
+
+		err = json.Unmarshal([]byte(result.Text()), &notifications)
+		if err != nil {
+			errChan <- fmt.Errorf("notification parsing error: %w", err)
+			return
+		}
+
+		if len(notifications) > 0 {
+			s.StatusChan <- "Setting notifications..."
+		}
+
+		for _, notification := range notifications {
+			log.Println(notification.Title, notification.Time)
+			parsedTime, err := time.ParseInLocation("2006-01-02 15:04 PM", notification.Time, time.Local)
+			if err != nil {
+				log.Println("Error parsing time:", err)
+				continue
+			}
+			_, err = s.db.Exec("INSERT INTO notifications (title, time, note_id) VALUES (?, ?, ?)", notification.Title, parsedTime.In(time.UTC), noteID)
+			if err != nil {
+				log.Println("Error inserting notification:", err)
+				continue
+			}
+		}
+	}()
+
+	urls := scraper.ExtractURLs(content)
+
+	go func() {
+		defer wg.Done()
+
+		chunks, err := utils.SplitText(content)
+		if err != nil {
+			errChan <- err
+			return
+		}
+
+		for _, url := range urls {
+			s.StatusChan <- "Getting info from " + url
+			fetchedContent, err := scraper.GetPageContent(url)
+			if err != nil {
+				errChan <- err
+				continue
+			}
+			chunks = append(chunks, fetchedContent...)
+		}
+
+		for index, chunk := range chunks {
+			query := `INSERT INTO chunks (note_id, content, chunk_number) VALUES (?, ?, ?) RETURNING id`
+			var chunkID int
+			err := s.db.QueryRow(query, noteID, chunk, index+1).Scan(&chunkID)
+			if err != nil {
+				errChan <- err
+				continue
+			}
+
+			contents := []*genai.Content{
+				genai.NewContentFromText(chunk, genai.RoleUser),
+			}
+			result, err := s.genai.Models.EmbedContent(ctx,
+				"gemini-embedding-exp-03-07",
+				contents,
+				&genai.EmbedContentConfig{
+					TaskType:             "RETRIEVAL_DOCUMENT",
+					OutputDimensionality: genai.Ptr[int32](768),
+				},
+			)
+			if err != nil {
+				errChan <- fmt.Errorf("embedding generation error: %w", err)
+				continue
+			}
+
+			embeddings, err := json.Marshal(result.Embeddings[0].Values)
+			if err != nil {
+				errChan <- fmt.Errorf("embedding marshaling error: %w", err)
+				continue
+			}
+
+			_, err = s.db.Exec("INSERT INTO embeddings (chunk_id, vector) VALUES (?, vector32(?))", chunkID, string(embeddings))
+			if err != nil {
+				errChan <- fmt.Errorf("embedding storage error: %w", err)
+				continue
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	close(errChan)
+
+	var firstErr error
+	for err := range errChan {
+		if firstErr == nil {
+			firstErr = err
+		}
 	}
 
-	embeddings, err := json.Marshal(result.Embeddings[0].Values)
-	if err != nil {
-		return err
-	}
-
-	_, err = s.db.Exec("INSERT INTO embeddings (note_id, vector) VALUES (?, vector32(?))", noteID, string(embeddings))
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return firstErr
 }
 
 func (s *Store) Recall(userQuery string) (string, error) {
@@ -80,7 +198,7 @@ func (s *Store) Recall(userQuery string) (string, error) {
 		contents,
 		&genai.EmbedContentConfig{
 			TaskType:             "RETRIEVAL_QUERY",
-			OutputDimensionality: func(i int32) *int32 { return &i }(768),
+			OutputDimensionality: genai.Ptr[int32](768),
 		},
 	)
 	if err != nil {
@@ -92,39 +210,41 @@ func (s *Store) Recall(userQuery string) (string, error) {
 		return "", err
 	}
 
-	query := `SELECT notes.id, notes.title, notes.content, notes.created_at FROM notes JOIN embeddings ON notes.id = embeddings.note_id ORDER BY
-       vector_distance_cos(embeddings.vector, vector32(?))
-    ASC LIMIT 3`
+	query := `SELECT n.id, n.created_at, c.id AS chunk_id, c.content, c.chunk_number
+		FROM notes n
+		INNER JOIN chunks c ON n.id = c.note_id
+		INNER JOIN embeddings e ON c.id = e.chunk_id
+		ORDER BY vector_distance_cos(e.vector, vector32(?)) ASC
+		LIMIT 10`
 
-	rows, err := s.db.Query(query, string(embeddings), string(embeddings))
+	rows, err := s.db.Query(query, string(embeddings))
 	if err != nil {
 		return "", err
 	}
 	defer rows.Close()
 
-	var fetchedNotes []Note
+	var fetchedChunks []CombinedNote
 
 	for rows.Next() {
-		note := Note{}
-		err = rows.Scan(&note.ID, &note.Title, &note.Content, &note.CreatedAt)
+		note := CombinedNote{}
+		err = rows.Scan(&note.ID, &note.CreatedAt, &note.ChunkID, &note.Content, &note.ChunkNumber)
 		if err != nil {
 			return "", err
 		}
-		fetchedNotes = append(fetchedNotes, note)
+		fetchedChunks = append(fetchedChunks, note)
 	}
 	if err = rows.Err(); err != nil {
 		return "", err
 	}
 
-	notesContext := strings.Builder{}
-	notesContext.WriteString("\n\nUser notes:\n")
+	chunksContext := strings.Builder{}
+	chunksContext.WriteString("\n\nChunks:\n")
 	loc, _ := time.LoadLocation("Local")
-	for _, note := range fetchedNotes {
-		notesContext.WriteString(fmt.Sprintf("- %s - timestamp: %s\n", note.Content, note.CreatedAt.In(loc).Format("2006-01-02 15:04")))
+	for _, chunk := range fetchedChunks {
+		chunksContext.WriteString(fmt.Sprintf("- %s - timestamp: %s\n", chunk.Content, chunk.CreatedAt.In(loc).Format("2006-01-02 15:04")))
 	}
 
-	finalInput := "User query: " + userQuery + notesContext.String()
-	// log.Println(finalInput)
+	finalInput := "User query: " + userQuery + chunksContext.String()
 
 	data, err := os.ReadFile("internal/notes/system_prompt.txt")
 	if err != nil {
@@ -145,22 +265,20 @@ func (s *Store) Recall(userQuery string) (string, error) {
 		return "", err
 	}
 
-	log.Println(response.Text())
-
 	return response.Text(), nil
 	// return "", nil
 }
 
-func (s *Store) GetAllNotes() (notes []Note, e error) {
-	rows, err := s.db.Query(`SELECT id, title, content, created_at FROM notes ORDER BY created_at DESC`)
+func (s *Store) GetAllNotes() (notes []CombinedNote, e error) {
+	rows, err := s.db.Query(`SELECT n.id, n.created_at, c.content, c.id AS chunk_id, c.chunk_number FROM notes n INNER JOIN chunks c ON n.id = c.note_id WHERE c.chunk_number = 1 ORDER BY n.created_at DESC`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		note := Note{}
-		err = rows.Scan(&note.ID, &note.Title, &note.Content, &note.CreatedAt)
+		note := CombinedNote{}
+		err = rows.Scan(&note.ID, &note.CreatedAt, &note.Content, &note.ChunkID, &note.ChunkNumber)
 		if err != nil {
 			return nil, err
 		}

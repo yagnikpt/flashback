@@ -8,12 +8,9 @@ import (
 )
 
 const (
-	minHeight        = 3
-	defaultHeight    = 3
+	defaultHeight    = 5
 	defaultWidth     = 40
-	defaultCharLimit = 0 // no limit
-	defaultMaxHeight = 99
-	defaultMaxWidth  = 500
+	defaultCharLimit = 0
 )
 
 type (
@@ -72,6 +69,10 @@ func (m *Model) Focus() {
 
 func (m *Model) SetPlaceholder(str string) {
 	m.textarea.Placeholder = str
+}
+
+func (m *Model) SetHeight(height int) {
+	m.textarea.SetHeight(height)
 }
 
 func NewModel() Model {

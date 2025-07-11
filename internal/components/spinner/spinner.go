@@ -2,14 +2,17 @@ package spinner
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/v2/spinner"
 	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/muesli/reflow/wordwrap"
 )
 
 type Model struct {
 	spinner     spinner.Model
 	displayText string
+	width       int
 }
 
 func (m Model) Init() tea.Cmd {
@@ -28,7 +31,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 func (m Model) View() string {
 	if m.displayText != "" {
-		str := fmt.Sprintf("%s %s\n", m.spinner.View(), m.displayText)
+		label := wordwrap.String(m.displayText, m.width-6)
+		label = strings.ReplaceAll(label, "\n", "\n  ")
+		str := fmt.Sprintf("%s %s\n", m.spinner.View(), label)
 		return str
 	}
 	return m.spinner.View() + "\n"
@@ -38,6 +43,10 @@ func (m *Model) SetDisplayText(text string) {
 	m.displayText = text
 }
 
+func (m *Model) SetWidth(width int) {
+	m.width = width
+}
+
 func NewModel() Model {
 	model := spinner.New()
 	model.Spinner = spinner.MiniDot
@@ -45,5 +54,6 @@ func NewModel() Model {
 	return Model{
 		spinner:     model,
 		displayText: "",
+		width:       0,
 	}
 }
