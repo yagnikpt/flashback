@@ -1,6 +1,6 @@
 # Variables
 BINARY_NAME=flashback
-DAEMON_BINARY_NAME=~/.local/share/flashback/bin/flashback-daemon
+DAEMON_BINARY_NAME=flashback-daemon
 PACKAGE_NAME          := github.com/yagnik-patel-47/flashback
 SRC_DIR=./cmd/flashback
 DAEMON_DIR=./cmd/daemon
@@ -14,7 +14,12 @@ all: build
 # Build the binary
 .PHONY: build
 build:
-	go build $(GOFLAGS) -o $(DAEMON_BINARY_NAME) $(DAEMON_DIR) && go build $(GOFLAGS) -o $(BINARY_NAME) $(SRC_DIR)
+	go build $(GOFLAGS) -o $(BINARY_NAME) $(SRC_DIR)
+
+# Build the daemon
+.PHONY: build-daemon
+build-daemon:
+	go build $(GOFLAGS) -o $(DAEMON_BINARY_NAME) $(DAEMON_DIR)
 
 # Run the application
 .PHONY: run

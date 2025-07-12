@@ -2,6 +2,7 @@
 .env
 *.db
 flashback
+flashback-daemon
 dist/
 .cache
 demo.tape
