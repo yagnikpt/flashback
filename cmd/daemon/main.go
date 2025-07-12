@@ -3,11 +3,11 @@ package main
 import (
 	"database/sql"
 	_ "embed"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sync"
 	"syscall"
 	"time"
 
@@ -20,9 +20,10 @@ import (
 //go:embed icon.png
 var icon []byte
 
-func main() {
-	fmt.Println("Flashback Daemon")
+var activeTimers = make(map[int]*time.Timer)
+var timersMutex sync.Mutex
 
+func main() {
 	dataDir, err := utils.GetLocalDataDir()
 	if err != nil {
 		os.Exit(1)
@@ -53,7 +54,6 @@ func main() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		log.Println("Checking for new pending notifications...")
 		loadAndSchedulePendingNotes(db)
 	}
 
@@ -64,7 +64,7 @@ func main() {
 }
 
 func loadAndSchedulePendingNotes(db *sql.DB) {
-	query := `SELECT title, time FROM notifications WHERE datetime(time) >= datetime('now') AND datetime(time) < datetime('now', '+2 days')`
+	query := `SELECT id, title, time FROM notifications WHERE datetime(time) >= datetime('now') AND datetime(time) < datetime('now', '+2 days')`
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -73,6 +73,7 @@ func loadAndSchedulePendingNotes(db *sql.DB) {
 	defer rows.Close()
 
 	type Notification struct {
+		ID    int       `json:"id"`
 		Title string    `json:"title"`
 		Time  time.Time `json:"time"`
 	}
@@ -81,7 +82,7 @@ func loadAndSchedulePendingNotes(db *sql.DB) {
 
 	for rows.Next() {
 		notification := Notification{}
-		err = rows.Scan(&notification.Title, &notification.Time)
+		err = rows.Scan(&notification.ID, &notification.Title, &notification.Time)
 		if err != nil {
 			log.Println(err)
 		}
@@ -91,12 +92,42 @@ func loadAndSchedulePendingNotes(db *sql.DB) {
 		log.Println(err)
 	}
 
+	timersMutex.Lock()
+	defer timersMutex.Unlock()
+
+	for id := range activeTimers {
+		found := false
+		for _, notif := range notifications {
+			if id == notif.ID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			if timer, exists := activeTimers[id]; exists && timer != nil {
+				timer.Stop()
+				delete(activeTimers, id)
+			}
+		}
+	}
+
 	for _, notification := range notifications {
+		// Skip if a timer is already active for this notification
+		if _, exists := activeTimers[notification.ID]; exists {
+			continue
+		}
+
 		timeDiff := time.Until(notification.Time)
-		fmt.Println(notification.Title, timeDiff)
-		time.AfterFunc(timeDiff, func() {
-			sendNotification("Reminder", notification.Title)
-		})
+		if timeDiff > 0 {
+			timer := time.AfterFunc(timeDiff, func() {
+				sendNotification("Reminder", notification.Title)
+				// Remove from active timers after it fires
+				timersMutex.Lock()
+				delete(activeTimers, notification.ID)
+				timersMutex.Unlock()
+			})
+			activeTimers[notification.ID] = timer
+		}
 	}
 }
 
@@ -104,6 +135,6 @@ func sendNotification(title, message string) {
 	beeep.AppName = "Flashback"
 	err := beeep.Notify(title, message, icon)
 	if err != nil {
-		fmt.Println("Error sending notification:", err)
+		log.Println("Error sending notification:", err)
 	}
 }
