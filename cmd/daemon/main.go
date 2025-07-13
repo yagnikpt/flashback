@@ -17,9 +17,6 @@ import (
 	"github.com/yagnik-patel-47/flashback/internal/utils"
 )
 
-//go:embed icon.png
-var icon []byte
-
 var activeTimers = make(map[int]*time.Timer)
 var timersMutex sync.Mutex
 
@@ -130,6 +127,9 @@ func loadAndSchedulePendingNotes(db *sql.DB) {
 		}
 	}
 }
+
+//go:embed icon.png
+var icon []byte
 
 func sendNotification(title, message string) {
 	beeep.AppName = "Flashback"
