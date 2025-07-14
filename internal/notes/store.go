@@ -214,10 +214,10 @@ func (s *Store) Recall(userQuery string) (string, error) {
 		FROM notes n
 		INNER JOIN chunks c ON n.id = c.note_id
 		INNER JOIN embeddings e ON c.id = e.chunk_id
-		ORDER BY vector_distance_cos(e.vector, vector32(?)) ASC
-		LIMIT 10`
+		WHERE vector_distance_cos(e.vector, vector32(?)) > 0.3
+		ORDER BY vector_distance_cos(e.vector, vector32(?)) ASC`
 
-	rows, err := s.db.Query(query, string(embeddings))
+	rows, err := s.db.Query(query, string(embeddings), string(embeddings))
 	if err != nil {
 		return "", err
 	}
@@ -236,6 +236,12 @@ func (s *Store) Recall(userQuery string) (string, error) {
 	if err = rows.Err(); err != nil {
 		return "", err
 	}
+
+	// log.Println(len(fetchedChunks), "records populated")
+
+	// for _, chunk := range fetchedChunks {
+	// 	log.Println(chunk.Content)
+	// }
 
 	chunksContext := strings.Builder{}
 	chunksContext.WriteString("\n\nChunks:\n")
