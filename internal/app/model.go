@@ -18,10 +18,11 @@ import (
 )
 
 var (
-	primaryBackground = lipgloss.NewStyle().Background(lipgloss.Color("#5b6b6d")).Padding(0, 1)
-	dangerBackground  = lipgloss.NewStyle().Background(lipgloss.Color("#9f1239")).Padding(0, 1)
-	successStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#86AF80"))
-	mainViewStyles    = lipgloss.NewStyle().Margin(1, 2)
+	primaryBackground   = lipgloss.NewStyle().Background(lipgloss.Color("#475569")).Padding(0, 1)
+	secondaryBackground = lipgloss.NewStyle().Background(lipgloss.Color("#475569")).Padding(0, 1)
+	dangerBackground    = lipgloss.NewStyle().Background(lipgloss.Color("#9f1239")).Padding(0, 1)
+	successStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#86AF80"))
+	mainViewStyles      = lipgloss.NewStyle().Margin(1, 2)
 )
 
 type Model struct {
@@ -182,10 +183,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	header := "⚡Flashback"
 	modeIndicator := "Mode:" + " "
-	if m.mode == "delete" {
-		modeIndicator += dangerBackground.Render(m.mode)
-	} else {
+	switch m.mode {
+	case "note":
 		modeIndicator += primaryBackground.Render(m.mode)
+	case "recall":
+		modeIndicator += secondaryBackground.Render(m.mode)
+	case "delete":
+		modeIndicator += dangerBackground.Render(m.mode)
 	}
 
 	var tui strings.Builder

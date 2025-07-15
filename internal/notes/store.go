@@ -121,10 +121,28 @@ func (s *Store) CreateNote(content string) error {
 	go func() {
 		defer wg.Done()
 
-		chunks, err := utils.SplitText(content)
-		if err != nil {
-			errChan <- err
-			return
+		var chunks []string
+
+		if strings.Contains(content, "#clipboard") {
+			clipboardChunks, err := contentloaders.GetClipboardContent()
+			if err != nil {
+				errChan <- err
+				return
+			}
+			withClipboardContent := strings.ReplaceAll(content, "#clipboard", strings.Join(clipboardChunks, "\n"))
+			newChunks, err := utils.SplitText(withClipboardContent)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			chunks = append(chunks, newChunks...)
+		} else {
+			newChunks, err := utils.SplitText(content)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			chunks = append(chunks, newChunks...)
 		}
 
 		searchTerms := utils.ExtractSearchTerms(content)
