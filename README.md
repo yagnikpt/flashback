@@ -15,14 +15,11 @@ A powerful command-line tool that serves as your second memory, intelligently st
 
 ### 🎯 Three Modes
 1. **Note Mode**: Quickly capture thoughts, ideas, and information
+    - **URL Mode**: Fetch content from URLs. usage -> web:https://example.com
+    - **File Mode**: Use content from files. usage -> file:/path/to/file.txt
+    - **Clipboard Mode**: Use content from clipboard. usage -> #clipboard
 2. **Recall Mode**: Query your notes using natural language to get intelligent summaries
 3. **Delete Mode**: Browse and manage your existing notes with easy deletion
-
-### 🖥️ Beautiful Terminal Interface
-- Modern TUI (Terminal User Interface) built with Bubble Tea
-- Responsive design that adapts to your terminal size
-- Visual mode indicators and loading states
-- Keyboard-driven navigation for maximum efficiency
 
 ### 🔒 Privacy & Performance
 - **Local Storage**: All notes stored locally in SQLite database

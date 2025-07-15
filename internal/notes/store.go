@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yagnik-patel-47/flashback/internal/scraper"
+	"github.com/yagnik-patel-47/flashback/internal/contentloaders"
 	"github.com/yagnik-patel-47/flashback/internal/utils"
 	"google.golang.org/genai"
 )
@@ -52,50 +52,30 @@ func (s *Store) CreateNote(content string) error {
 	wg.Add(2)
 
 	errChan := make(chan error, 2)
-	chunksChan := make(chan string)
 
 	go func() {
 		defer wg.Done()
 
-		prompt, err := os.ReadFile("internal/notes/create_prompt.txt")
 		if err != nil {
 			errChan <- fmt.Errorf("error: %w", err)
 			return
 		}
 		config := &genai.GenerateContentConfig{
-			ResponseMIMEType:  "application/json",
-			SystemInstruction: genai.NewContentFromText(string(prompt), genai.RoleUser),
+			ResponseMIMEType: "application/json",
 			ResponseSchema: &genai.Schema{
-				Type: genai.TypeObject,
-				Properties: map[string]*genai.Schema{
-					"notifications": {
-						Type: genai.TypeArray,
-						Items: &genai.Schema{
-							Type: genai.TypeObject,
-							Properties: map[string]*genai.Schema{
-								"title": {Type: genai.TypeString, Description: "The title to show in notification"},
-								"time":  {Type: genai.TypeString, Description: "The time mentioned for notification in format YYYY-MM-DD HH:MM AM/PM"},
-							},
-							PropertyOrdering: []string{"title", "time"},
-						},
+				Type: genai.TypeArray,
+				Items: &genai.Schema{
+					Type: genai.TypeObject,
+					Properties: map[string]*genai.Schema{
+						"title": {Type: genai.TypeString, Description: "The title to show in notification"},
+						"time":  {Type: genai.TypeString, Description: "The time mentioned for notification in format YYYY-MM-DD HH:MM AM/PM"},
 					},
-					"pages": {
-						Type: genai.TypeArray,
-						Items: &genai.Schema{
-							Type: genai.TypeObject,
-							Properties: map[string]*genai.Schema{
-								"keywords": {Type: genai.TypeString, Description: "keywords to look and search on a web page"},
-								"url":      {Type: genai.TypeString, Description: "URL of the web page"},
-							},
-							PropertyOrdering: []string{"keywords", "url"},
-						},
-					},
+					PropertyOrdering: []string{"title", "time"},
 				},
 			},
 		}
 
-		input := fmt.Sprintf("Current date and time is %s\n Note: %s", time.Now().Format("2006-01-02 15:04 PM"), content)
-
+		input := "Identify the time given in the provided note for using the time in notification. Current date and time is " + time.Now().Format("2006-01-02 15:04 PM.") + "\n\n" + "Note: " + content
 		result, err := s.genai.Models.GenerateContent(
 			ctx,
 			"gemini-2.5-flash",
@@ -112,27 +92,19 @@ func (s *Store) CreateNote(content string) error {
 			Title string `json:"title"`
 			Time  string `json:"time"`
 		}
-		type PageMeta struct {
-			Keywords string `json:"keywords"`
-			URL      string `json:"url"`
-		}
-		type Response struct {
-			Notifications []Notification `json:"notifications"`
-			Pages         []PageMeta     `json:"pages"`
-		}
-		var response Response
+		var notifications []Notification
 
-		err = json.Unmarshal([]byte(result.Text()), &response)
+		err = json.Unmarshal([]byte(result.Text()), &notifications)
 		if err != nil {
 			errChan <- fmt.Errorf("notification parsing error: %w", err)
 			return
 		}
 
-		if len(response.Notifications) > 0 {
+		if len(notifications) > 0 {
 			s.StatusChan <- "Setting notifications..."
 		}
 
-		for _, notification := range response.Notifications {
+		for _, notification := range notifications {
 			parsedTime, err := time.ParseInLocation("2006-01-02 15:04 PM", notification.Time, time.Local)
 			if err != nil {
 				log.Println("Error parsing time:", err)
@@ -144,19 +116,6 @@ func (s *Store) CreateNote(content string) error {
 				continue
 			}
 		}
-
-		for _, page := range response.Pages {
-			s.StatusChan <- "Getting info from " + page.URL
-			fetchedContent, err := scraper.GetPageContent(page.URL)
-			if err != nil {
-				errChan <- err
-				continue
-			}
-			for _, chunk := range fetchedContent {
-				chunksChan <- chunk
-			}
-		}
-		close(chunksChan)
 	}()
 
 	go func() {
@@ -168,8 +127,26 @@ func (s *Store) CreateNote(content string) error {
 			return
 		}
 
-		for chunk := range chunksChan {
-			chunks = append(chunks, chunk)
+		searchTerms := utils.ExtractSearchTerms(content)
+		for _, url := range searchTerms.Web {
+			s.StatusChan <- fmt.Sprintf("Fetching content from %s", url)
+			webChunks, err := contentloaders.GetWebpageContent(url)
+			if err != nil {
+				log.Println("Error fetching web content:", err)
+				continue
+			}
+			chunks = append(chunks, webChunks...)
+		}
+
+		for _, file := range searchTerms.Files {
+			s.StatusChan <- fmt.Sprintf("Fetching content from %s", file)
+			fileChunks, err := contentloaders.GetTextContent(file)
+			log.Println(fileChunks)
+			if err != nil {
+				log.Println("Error fetching file content:", err)
+				continue
+			}
+			chunks = append(chunks, fileChunks...)
 		}
 
 		for index, chunk := range chunks {

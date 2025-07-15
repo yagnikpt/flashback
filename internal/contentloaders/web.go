@@ -1,4 +1,4 @@
-package scraper
+package contentloaders
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"github.com/yagnik-patel-47/flashback/internal/utils"
 )
 
-func GetPageContent(url string) ([]string, error) {
+func GetWebpageContent(url string) ([]string, error) {
 	url = strings.TrimRight(url, ".,;:!?)")
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		url = "http://" + url
