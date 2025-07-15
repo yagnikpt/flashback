@@ -52,34 +52,59 @@ func (s *Store) CreateNote(content string) error {
 	wg.Add(2)
 
 	errChan := make(chan error, 2)
+	chunksChan := make(chan string)
 
 	go func() {
 		defer wg.Done()
 
+		prompt, err := os.ReadFile("internal/notes/create_prompt.txt")
+		if err != nil {
+			errChan <- fmt.Errorf("error: %w", err)
+			return
+		}
 		config := &genai.GenerateContentConfig{
-			ResponseMIMEType: "application/json",
+			ResponseMIMEType:  "application/json",
+			SystemInstruction: genai.NewContentFromText(string(prompt), genai.RoleUser),
 			ResponseSchema: &genai.Schema{
-				Type: genai.TypeArray,
-				Items: &genai.Schema{
-					Type: genai.TypeObject,
-					Properties: map[string]*genai.Schema{
-						"title": {Type: genai.TypeString, Description: "The title to show in notification"},
-						"time":  {Type: genai.TypeString, Description: "The time mentioned for notification in format YYYY-MM-DD HH:MM AM/PM"},
+				Type: genai.TypeObject,
+				Properties: map[string]*genai.Schema{
+					"notifications": {
+						Type: genai.TypeArray,
+						Items: &genai.Schema{
+							Type: genai.TypeObject,
+							Properties: map[string]*genai.Schema{
+								"title": {Type: genai.TypeString, Description: "The title to show in notification"},
+								"time":  {Type: genai.TypeString, Description: "The time mentioned for notification in format YYYY-MM-DD HH:MM AM/PM"},
+							},
+							PropertyOrdering: []string{"title", "time"},
+						},
 					},
-					PropertyOrdering: []string{"title", "time"},
+					"pages": {
+						Type: genai.TypeArray,
+						Items: &genai.Schema{
+							Type: genai.TypeObject,
+							Properties: map[string]*genai.Schema{
+								"keywords": {Type: genai.TypeString, Description: "keywords to look and search on a web page"},
+								"url":      {Type: genai.TypeString, Description: "URL of the web page"},
+							},
+							PropertyOrdering: []string{"keywords", "url"},
+						},
+					},
 				},
 			},
 		}
 
+		input := fmt.Sprintf("Current date and time is %s\n Note: %s", time.Now().Format("2006-01-02 15:04 PM"), content)
+
 		result, err := s.genai.Models.GenerateContent(
 			ctx,
 			"gemini-2.5-flash",
-			genai.Text("Identify the time given in the provided note for using the time in notification. Current date and time is "+time.Now().Format("2006-01-02 15:04 PM.")+"\n\n"+"Note: "+content),
+			genai.Text(input),
 			config,
 		)
 
 		if err != nil {
-			errChan <- fmt.Errorf("notification generation error: %w", err)
+			errChan <- fmt.Errorf("error: %w", err)
 			return
 		}
 
@@ -87,20 +112,27 @@ func (s *Store) CreateNote(content string) error {
 			Title string `json:"title"`
 			Time  string `json:"time"`
 		}
-		var notifications []Notification
+		type PageMeta struct {
+			Keywords string `json:"keywords"`
+			URL      string `json:"url"`
+		}
+		type Response struct {
+			Notifications []Notification `json:"notifications"`
+			Pages         []PageMeta     `json:"pages"`
+		}
+		var response Response
 
-		err = json.Unmarshal([]byte(result.Text()), &notifications)
+		err = json.Unmarshal([]byte(result.Text()), &response)
 		if err != nil {
 			errChan <- fmt.Errorf("notification parsing error: %w", err)
 			return
 		}
 
-		if len(notifications) > 0 {
+		if len(response.Notifications) > 0 {
 			s.StatusChan <- "Setting notifications..."
 		}
 
-		for _, notification := range notifications {
-			log.Println(notification.Title, notification.Time)
+		for _, notification := range response.Notifications {
 			parsedTime, err := time.ParseInLocation("2006-01-02 15:04 PM", notification.Time, time.Local)
 			if err != nil {
 				log.Println("Error parsing time:", err)
@@ -112,9 +144,20 @@ func (s *Store) CreateNote(content string) error {
 				continue
 			}
 		}
-	}()
 
-	urls := scraper.ExtractURLs(content)
+		for _, page := range response.Pages {
+			s.StatusChan <- "Getting info from " + page.URL
+			fetchedContent, err := scraper.GetPageContent(page.URL)
+			if err != nil {
+				errChan <- err
+				continue
+			}
+			for _, chunk := range fetchedContent {
+				chunksChan <- chunk
+			}
+		}
+		close(chunksChan)
+	}()
 
 	go func() {
 		defer wg.Done()
@@ -125,14 +168,8 @@ func (s *Store) CreateNote(content string) error {
 			return
 		}
 
-		for _, url := range urls {
-			s.StatusChan <- "Getting info from " + url
-			fetchedContent, err := scraper.GetPageContent(url)
-			if err != nil {
-				errChan <- err
-				continue
-			}
-			chunks = append(chunks, fetchedContent...)
+		for chunk := range chunksChan {
+			chunks = append(chunks, chunk)
 		}
 
 		for index, chunk := range chunks {
@@ -252,12 +289,12 @@ func (s *Store) Recall(userQuery string) (string, error) {
 
 	finalInput := "User query: " + userQuery + chunksContext.String()
 
-	data, err := os.ReadFile("internal/notes/system_prompt.txt")
+	prompt, err := os.ReadFile("internal/notes/retrieve_prompt.txt")
 	if err != nil {
 		return "", err
 	}
 	config := &genai.GenerateContentConfig{
-		SystemInstruction: genai.NewContentFromText(string(data), genai.RoleUser),
+		SystemInstruction: genai.NewContentFromText(string(prompt), genai.RoleUser),
 	}
 
 	response, err := s.genai.Models.GenerateContent(

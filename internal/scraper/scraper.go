@@ -3,7 +3,6 @@ package scraper
 import (
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 
 	h2m "github.com/JohannesKaufmann/html-to-markdown/v2"
@@ -12,6 +11,11 @@ import (
 )
 
 func GetPageContent(url string) ([]string, error) {
+	url = strings.TrimRight(url, ".,;:!?)")
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		url = "http://" + url
+	}
+
 	res, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -44,21 +48,4 @@ func GetPageContent(url string) ([]string, error) {
 	}
 
 	return chunks, nil
-}
-
-func ExtractURLs(text string) []string {
-	urlPattern := `(?i)\b((?:https?://|www\.|[a-z0-9.-]+\.[a-z]{2,4}/?)[^\s<>"]+|www\.[^\s<>"]+)`
-	re := regexp.MustCompile(urlPattern)
-	urls := re.FindAllString(text, -1)
-
-	var cleanedURLs []string
-	for _, url := range urls {
-		url = strings.TrimRight(url, ".,;:!?)")
-		if strings.HasPrefix(url, "www.") {
-			url = "http://" + url
-		}
-		cleanedURLs = append(cleanedURLs, url)
-	}
-
-	return cleanedURLs
 }
