@@ -40,7 +40,7 @@ A powerful command-line tool that serves as your second memory, intelligently st
 ### Option 1: Build from Source
 ```bash
 # Clone the repository
-git clone https://github.com/yagnik-patel-47/flashback.git
+git clone https://github.com/yagnikpt/flashback.git
 cd flashback
 
 # Build the application
@@ -53,7 +53,7 @@ make build
 ### Option 2: Direct Go Install
 ```bash
 # Install directly from source
-go install github.com/yagnik-patel-47/flashback/cmd/flashback@latest
+go install github.com/yagnikpt/flashback/cmd/flashback@latest
 
 # Run the application
 flashback
@@ -62,7 +62,7 @@ flashback
 ### Option 3: Development Setup
 ```bash
 # Clone and run in development mode
-git clone https://github.com/yagnik-patel-47/flashback.git
+git clone https://github.com/yagnikpt/flashback.git
 cd flashback
 
 # Install dependencies

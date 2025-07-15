@@ -1,4 +1,4 @@
-module github.com/yagnik-patel-47/flashback
+module github.com/yagnikpt/flashback
 
 go 1.24.4
 
