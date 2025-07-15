@@ -5,7 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
-	"github.com/yagnik-patel-47/flashback/internal/components/textarea"
+	"github.com/yagnikpt/flashback/internal/components/textarea"
 )
 
 var mainViewStyles = lipgloss.NewStyle().Margin(1, 2)

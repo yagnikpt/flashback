@@ -7,7 +7,7 @@ import (
 
 	h2m "github.com/JohannesKaufmann/html-to-markdown/v2"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/yagnik-patel-47/flashback/internal/utils"
+	"github.com/yagnikpt/flashback/internal/utils"
 )
 
 func GetWebpageContent(url string) ([]string, error) {

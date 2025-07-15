@@ -8,13 +8,13 @@ import (
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/muesli/reflow/wordwrap"
 
-	"github.com/yagnik-patel-47/flashback/internal/components/help"
-	"github.com/yagnik-patel-47/flashback/internal/components/notelist"
-	"github.com/yagnik-patel-47/flashback/internal/components/spinner"
-	"github.com/yagnik-patel-47/flashback/internal/components/textarea"
-	"github.com/yagnik-patel-47/flashback/internal/config"
+	"github.com/yagnikpt/flashback/internal/components/help"
+	"github.com/yagnikpt/flashback/internal/components/notelist"
+	"github.com/yagnikpt/flashback/internal/components/spinner"
+	"github.com/yagnikpt/flashback/internal/components/textarea"
+	"github.com/yagnikpt/flashback/internal/config"
 
-	"github.com/yagnik-patel-47/flashback/internal/notes"
+	"github.com/yagnikpt/flashback/internal/notes"
 )
 
 var (

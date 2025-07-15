@@ -11,11 +11,11 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 
-	"github.com/yagnik-patel-47/flashback/internal/app"
-	"github.com/yagnik-patel-47/flashback/internal/components/apiprompt"
-	"github.com/yagnik-patel-47/flashback/internal/config"
-	"github.com/yagnik-patel-47/flashback/internal/migration"
-	"github.com/yagnik-patel-47/flashback/internal/utils"
+	"github.com/yagnikpt/flashback/internal/app"
+	"github.com/yagnikpt/flashback/internal/components/apiprompt"
+	"github.com/yagnikpt/flashback/internal/config"
+	"github.com/yagnikpt/flashback/internal/migration"
+	"github.com/yagnikpt/flashback/internal/utils"
 )
 
 func main() {

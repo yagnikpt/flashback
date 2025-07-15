@@ -4,7 +4,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/yagnik-patel-47/flashback/internal/utils"
+	"github.com/yagnikpt/flashback/internal/utils"
 )
 
 // txt, md and other text files

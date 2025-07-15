@@ -10,8 +10,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/muesli/reflow/wordwrap"
-	"github.com/yagnik-patel-47/flashback/internal/notes"
-	"github.com/yagnik-patel-47/flashback/internal/utils"
+	"github.com/yagnikpt/flashback/internal/notes"
+	"github.com/yagnikpt/flashback/internal/utils"
 )
 
 type Model struct {

@@ -13,8 +13,8 @@ import (
 
 	"github.com/gen2brain/beeep"
 	_ "github.com/tursodatabase/go-libsql"
-	"github.com/yagnik-patel-47/flashback/internal/migration"
-	"github.com/yagnik-patel-47/flashback/internal/utils"
+	"github.com/yagnikpt/flashback/internal/migration"
+	"github.com/yagnikpt/flashback/internal/utils"
 )
 
 var activeTimers = make(map[int]*time.Timer)

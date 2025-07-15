@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yagnik-patel-47/flashback/internal/contentloaders"
-	"github.com/yagnik-patel-47/flashback/internal/utils"
+	"github.com/yagnikpt/flashback/internal/contentloaders"
+	"github.com/yagnikpt/flashback/internal/utils"
 	"google.golang.org/genai"
 )
 
