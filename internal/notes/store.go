@@ -3,10 +3,10 @@ package notes
 import (
 	"context"
 	"database/sql"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -220,6 +220,9 @@ func (s *Store) CreateNote(content string) error {
 	return firstErr
 }
 
+//go:embed retrieve_prompt.txt
+var retrievePrompt []byte
+
 func (s *Store) Recall(userQuery string) (string, error) {
 	ctx := context.Background()
 	contents := []*genai.Content{
@@ -246,7 +249,7 @@ func (s *Store) Recall(userQuery string) (string, error) {
 		FROM notes n
 		INNER JOIN chunks c ON n.id = c.note_id
 		INNER JOIN embeddings e ON c.id = e.chunk_id
-		WHERE vector_distance_cos(e.vector, vector32(?)) > 0.3
+		WHERE vector_distance_cos(e.vector, vector32(?)) > 0.25
 		ORDER BY vector_distance_cos(e.vector, vector32(?)) ASC`
 
 	rows, err := s.db.Query(query, string(embeddings), string(embeddings))
@@ -284,12 +287,8 @@ func (s *Store) Recall(userQuery string) (string, error) {
 
 	finalInput := "User query: " + userQuery + chunksContext.String()
 
-	prompt, err := os.ReadFile("internal/notes/retrieve_prompt.txt")
-	if err != nil {
-		return "", err
-	}
 	config := &genai.GenerateContentConfig{
-		SystemInstruction: genai.NewContentFromText(string(prompt), genai.RoleUser),
+		SystemInstruction: genai.NewContentFromText(string(retrievePrompt), genai.RoleUser),
 	}
 
 	response, err := s.genai.Models.GenerateContent(
