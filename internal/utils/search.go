@@ -15,8 +15,8 @@ func ExtractSearchTerms(input string) SearchResult {
 		Files: make([]string, 0),
 	}
 
-	webRegex := regexp.MustCompile(`^web:(.+)$`)
-	fileRegex := regexp.MustCompile(`^file:(.+)$`)
+	webRegex := regexp.MustCompile(`(?:^|\s)web:([^\s]+)`)
+	fileRegex := regexp.MustCompile(`(?:^|\s)file:([^\s]+)`)
 
 	webMatches := webRegex.FindAllStringSubmatch(input, -1)
 	for _, match := range webMatches {

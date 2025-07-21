@@ -3,7 +3,6 @@ package notes
 import (
 	"context"
 	"database/sql"
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -49,10 +48,50 @@ func (s *Store) CreateNote(content string) error {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(2)
+	errChan := make(chan error, 3)
 
-	errChan := make(chan error, 2)
+	var chunks []string
+	if strings.Contains(content, "#clipboard") {
+		clipboardChunks, err := contentloaders.GetClipboardContent()
+		if err != nil {
+			return err
+		}
+		withClipboardContent := strings.ReplaceAll(content, "#clipboard", strings.Join(clipboardChunks, "\n"))
+		newChunks, err := utils.SplitText(withClipboardContent)
+		if err != nil {
+			return err
+		}
+		chunks = append(chunks, newChunks...)
+	} else {
+		newChunks, err := utils.SplitText(content)
+		if err != nil {
+			return err
+		}
+		chunks = append(chunks, newChunks...)
+	}
 
+	searchTerms := utils.ExtractSearchTerms(content)
+	chunksChan := make(chan string, len(searchTerms.Web)+len(searchTerms.Files))
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for _, url := range searchTerms.Web {
+			s.StatusChan <- fmt.Sprintf("Fetching content from %s", url)
+			contentloaders.GetWebpageContent(content, url, s.genai, chunksChan, errChan)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for _, file := range searchTerms.Files {
+			s.StatusChan <- fmt.Sprintf("Fetching content from %s", file)
+			contentloaders.GetTextFileContent(file, chunksChan, errChan)
+		}
+	}()
+
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
@@ -118,96 +157,8 @@ func (s *Store) CreateNote(content string) error {
 		}
 	}()
 
-	go func() {
-		defer wg.Done()
-
-		var chunks []string
-
-		if strings.Contains(content, "#clipboard") {
-			clipboardChunks, err := contentloaders.GetClipboardContent()
-			if err != nil {
-				errChan <- err
-				return
-			}
-			withClipboardContent := strings.ReplaceAll(content, "#clipboard", strings.Join(clipboardChunks, "\n"))
-			newChunks, err := utils.SplitText(withClipboardContent)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			chunks = append(chunks, newChunks...)
-		} else {
-			newChunks, err := utils.SplitText(content)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			chunks = append(chunks, newChunks...)
-		}
-
-		searchTerms := utils.ExtractSearchTerms(content)
-		for _, url := range searchTerms.Web {
-			s.StatusChan <- fmt.Sprintf("Fetching content from %s", url)
-			webChunks, err := contentloaders.GetWebpageContent(url)
-			if err != nil {
-				log.Println("Error fetching web content:", err)
-				continue
-			}
-			chunks = append(chunks, webChunks...)
-		}
-
-		for _, file := range searchTerms.Files {
-			s.StatusChan <- fmt.Sprintf("Fetching content from %s", file)
-			fileChunks, err := contentloaders.GetTextContent(file)
-			log.Println(fileChunks)
-			if err != nil {
-				log.Println("Error fetching file content:", err)
-				continue
-			}
-			chunks = append(chunks, fileChunks...)
-		}
-
-		for index, chunk := range chunks {
-			query := `INSERT INTO chunks (note_id, content, chunk_number) VALUES (?, ?, ?) RETURNING id`
-			var chunkID int
-			err := s.db.QueryRow(query, noteID, chunk, index+1).Scan(&chunkID)
-			if err != nil {
-				errChan <- err
-				continue
-			}
-
-			contents := []*genai.Content{
-				genai.NewContentFromText(chunk, genai.RoleUser),
-			}
-			result, err := s.genai.Models.EmbedContent(ctx,
-				"gemini-embedding-exp-03-07",
-				contents,
-				&genai.EmbedContentConfig{
-					TaskType:             "RETRIEVAL_DOCUMENT",
-					OutputDimensionality: genai.Ptr[int32](768),
-				},
-			)
-			if err != nil {
-				errChan <- fmt.Errorf("embedding generation error: %w", err)
-				continue
-			}
-
-			embeddings, err := json.Marshal(result.Embeddings[0].Values)
-			if err != nil {
-				errChan <- fmt.Errorf("embedding marshaling error: %w", err)
-				continue
-			}
-
-			_, err = s.db.Exec("INSERT INTO embeddings (chunk_id, vector) VALUES (?, vector32(?))", chunkID, string(embeddings))
-			if err != nil {
-				errChan <- fmt.Errorf("embedding storage error: %w", err)
-				continue
-			}
-		}
-	}()
-
 	wg.Wait()
-
+	close(chunksChan)
 	close(errChan)
 
 	var firstErr error
@@ -217,11 +168,54 @@ func (s *Store) CreateNote(content string) error {
 		}
 	}
 
-	return firstErr
-}
+	if firstErr != nil {
+		return firstErr
+	}
 
-//go:embed retrieve_prompt.txt
-var retrievePrompt []byte
+	for fullText := range chunksChan {
+		c, err := utils.SplitText(fullText)
+		if err != nil {
+			return err
+		}
+		chunks = append(chunks, c...)
+	}
+
+	for index, chunk := range chunks {
+		query := `INSERT INTO chunks (note_id, content, chunk_number) VALUES (?, ?, ?) RETURNING id`
+		var chunkID int
+		err := s.db.QueryRow(query, noteID, chunk, index+1).Scan(&chunkID)
+		if err != nil {
+			return err
+		}
+
+		contents := []*genai.Content{
+			genai.NewContentFromText(chunk, genai.RoleUser),
+		}
+		result, err := s.genai.Models.EmbedContent(ctx,
+			"gemini-embedding-exp-03-07",
+			contents,
+			&genai.EmbedContentConfig{
+				TaskType:             "RETRIEVAL_DOCUMENT",
+				OutputDimensionality: genai.Ptr[int32](768),
+			},
+		)
+		if err != nil {
+			return err
+		}
+
+		embeddings, err := json.Marshal(result.Embeddings[0].Values)
+		if err != nil {
+			return err
+		}
+
+		_, err = s.db.Exec("INSERT INTO embeddings (chunk_id, vector) VALUES (?, vector32(?))", chunkID, string(embeddings))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 func (s *Store) Recall(userQuery string) (string, error) {
 	ctx := context.Background()
@@ -288,7 +282,7 @@ func (s *Store) Recall(userQuery string) (string, error) {
 	finalInput := "User query: " + userQuery + chunksContext.String()
 
 	config := &genai.GenerateContentConfig{
-		SystemInstruction: genai.NewContentFromText(string(retrievePrompt), genai.RoleUser),
+		SystemInstruction: genai.NewContentFromText(string(utils.RetrievalPrompt), genai.RoleUser),
 	}
 
 	response, err := s.genai.Models.GenerateContent(

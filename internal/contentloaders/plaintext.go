@@ -3,28 +3,33 @@ package contentloaders
 import (
 	"errors"
 	"os"
-
-	"github.com/yagnikpt/flashback/internal/utils"
 )
 
 // txt, md and other text files
-func GetTextContent(path string) ([]string, error) {
+func GetTextFileContent(path string, response chan<- string, errChan chan<- error) {
 	if path == "" {
-		return nil, errors.New("path cannot be empty")
+		errChan <- errors.New("path cannot be empty")
+		return
 	}
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil, errors.New("file does not exist")
+		errChan <- errors.New("file does not exist")
+		return
 	}
 
 	content, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		errChan <- err
+		return
 	}
-	chunks, err := utils.SplitText(string(content))
-	if err != nil {
-		return nil, err
-	}
+	response <- string(content)
+	// chunks, err := utils.SplitText(string(content))
+	// if err != nil {
+	// 	errChan <- err
+	// 	return
+	// }
 
-	return chunks, nil
+	// for _, chunk := range chunks {
+	// 	response <- chunk
+	// }
 }
