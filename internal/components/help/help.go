@@ -3,6 +3,7 @@ package help
 import (
 	"github.com/charmbracelet/bubbles/v2/help"
 	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/yagnikpt/flashback/internal/global"
 )
 
 type Model struct {
@@ -12,10 +13,11 @@ type Model struct {
 	createHelp help.Model
 	deleteHelp help.Model
 	recallHelp help.Model
-	mode       string
+	store      *global.Store
 }
 
 func NewModel() Model {
+	store := global.GetStore()
 	createHelp := help.New()
 	deleteHelp := help.New()
 	recallHelp := help.New()
@@ -31,12 +33,8 @@ func NewModel() Model {
 		createHelp: createHelp,
 		deleteHelp: deleteHelp,
 		recallHelp: recallHelp,
-		mode:       "create",
+		store:      store,
 	}
-}
-
-func (m *Model) SetMode(mode string) {
-	m.mode = mode
 }
 
 func (m Model) Init() tea.Cmd {
@@ -53,7 +51,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
-	switch m.mode {
+	switch m.store.Mode {
 	case "create":
 		m.createHelp, cmd = m.createHelp.Update(msg)
 		cmds = append(cmds, cmd)
@@ -70,7 +68,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	switch m.mode {
+	switch m.store.Mode {
 	case "create":
 		return m.createHelp.View(m.createKeys)
 	case "delete":

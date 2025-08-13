@@ -40,6 +40,8 @@ func main() {
 	}
 	defer db.Close()
 
+	db.Exec("PRAGMA journal_mode=WAL")
+
 	err = migration.Migrate(db)
 	if err != nil {
 		log.Fatal(err)

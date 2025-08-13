@@ -10,22 +10,16 @@ import (
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/muesli/reflow/wordwrap"
+	"github.com/yagnikpt/flashback/internal/global"
 	"github.com/yagnikpt/flashback/internal/notes"
 	"github.com/yagnikpt/flashback/internal/utils"
 )
 
 type Model struct {
-	items      []notes.CombinedNote
-	cursor     int
-	paginator  paginator.Model
-	width      int
-	height     int
-	OutputChan chan notes.CombinedNote
-}
-
-func (m *Model) SetDimensions(width, height int) {
-	m.width = width
-	m.height = height
+	store     *global.Store
+	items     []notes.CombinedNote
+	cursor    int
+	paginator paginator.Model
 }
 
 var listContainerStyle = lipgloss.NewStyle()
@@ -48,27 +42,19 @@ var listNavigation = KeyMap{
 		key.WithKeys("j", "down"),
 		key.WithHelp("↓/j", "move down"),
 	),
-	Left: key.NewBinding(
-		key.WithKeys("h", "left", "pgup"),
-		key.WithHelp("←/h/pgdn", "move left"),
-	),
-	Right: key.NewBinding(
-		key.WithKeys("l", "right", "pgdn"),
-		key.WithHelp("→/l/pgup", "move right"),
-	),
 }
 
 func (m Model) Init() tea.Cmd {
-	return nil
+	return getNotesCmd(m)
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	var cmd tea.Cmd
+	var cmds []tea.Cmd
 
 	if len(m.items) == 0 {
 		m.cursor = 0
 		m.paginator.Page = 0
-		return m, cmd
 	}
 
 	if m.paginator.Page*m.paginator.PerPage >= len(m.items) {
@@ -92,6 +78,17 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
+	case notesMsg:
+		notes := []notes.CombinedNote(msg)
+		m.items = notes
+		m.paginator.SetTotalPages(len(notes))
+
+	case deleteNoteMsg:
+		success := bool(msg)
+		if success {
+			cmds = append(cmds, getNotesCmd(m))
+		}
+
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, listNavigation.Up):
@@ -124,13 +121,14 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 			currentPageItems := m.items[start:end]
 			if len(currentPageItems) > 0 {
-				m.OutputChan <- currentPageItems[m.cursor]
+				cmds = append(cmds, deleteNoteCmd(m, currentPageItems[m.cursor].ID))
 			}
 		}
 	}
 
 	m.paginator, cmd = m.paginator.Update(msg)
-	return m, cmd
+	cmds = append(cmds, cmd)
+	return m, tea.Batch(cmds...)
 }
 
 var loc, _ = time.LoadLocation("Local")
@@ -158,7 +156,7 @@ func (m Model) View() string {
 		if m.cursor == i {
 			cursor = cursorStyle.Render(">")
 		}
-		content := wordwrap.String(item.Content, m.width-6)
+		content := wordwrap.String(item.Content, m.store.Width-6)
 		content = strings.ReplaceAll(content, "\n", "\n  ")
 		relativeTime := utils.RelativeTime(item.CreatedAt.In(loc))
 
@@ -173,25 +171,19 @@ func (m Model) View() string {
 	return b.String()
 }
 
-func (m *Model) SetItems(items []notes.CombinedNote) {
-	m.items = items
-	m.paginator.SetTotalPages(len(items))
-}
-
 func NewModel() Model {
-	pagi := paginator.New()
-	pagi.PerPage = 5
-	pagi.Type = paginator.Dots
-	pagi.ActiveDot = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(252)).Render("•")
-	pagi.InactiveDot = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(238)).Render("•")
-	pagi.SetTotalPages(0)
+	store := global.GetStore()
+	p := paginator.New()
+	p.PerPage = 5
+	p.Type = paginator.Dots
+	p.ActiveDot = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(252)).Render("•")
+	p.InactiveDot = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(238)).Render("•")
+	p.SetTotalPages(0)
 
 	return Model{
-		items:      []notes.CombinedNote{},
-		cursor:     0,
-		paginator:  pagi,
-		OutputChan: make(chan notes.CombinedNote),
-		width:      0,
-		height:     0,
+		store:     store,
+		items:     []notes.CombinedNote{},
+		cursor:    0,
+		paginator: p,
 	}
 }

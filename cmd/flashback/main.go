@@ -14,6 +14,7 @@ import (
 	"github.com/yagnikpt/flashback/internal/app"
 	"github.com/yagnikpt/flashback/internal/components/apiprompt"
 	"github.com/yagnikpt/flashback/internal/config"
+	"github.com/yagnikpt/flashback/internal/global"
 	"github.com/yagnikpt/flashback/internal/migration"
 	"github.com/yagnikpt/flashback/internal/utils"
 )
@@ -50,6 +51,8 @@ func main() {
 	}
 	defer db.Close()
 
+	db.Exec("PRAGMA journal_mode=WAL")
+
 	err = migration.Migrate(db)
 	if err != nil {
 		log.Fatal(err)
@@ -73,7 +76,8 @@ func main() {
 	}
 
 	if len(cfg.APIKey) != 0 {
-		p := tea.NewProgram(app.InitModel(db, cfg), tea.WithAltScreen(), tea.WithKeyboardEnhancements())
+		global.InitStore(db, cfg)
+		p := tea.NewProgram(app.InitModel(), tea.WithAltScreen(), tea.WithKeyboardEnhancements())
 		_, err = p.Run()
 		if err != nil {
 			fmt.Printf("Alas, there's been an error: %v", err)

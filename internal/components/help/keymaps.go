@@ -27,6 +27,7 @@ type deleteKeyMap struct {
 	Quit       key.Binding
 	Delete     key.Binding
 	ChangeMode key.Binding
+	EditMode   key.Binding
 }
 
 func (k createKeyMap) ShortHelp() []key.Binding {
@@ -141,5 +142,9 @@ var deleteKeys = deleteKeyMap{
 	ChangeMode: key.NewBinding(
 		key.WithKeys("tab"),
 		key.WithHelp("tab", "change mode"),
+	),
+	EditMode: key.NewBinding(
+		key.WithKeys("e"),
+		key.WithHelp("e", "edit note"),
 	),
 }

@@ -31,16 +31,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.textarea.SetWidth(msg.Width - 4)
-	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "enter":
-			if m.textarea.Value() != "" {
-				m.OutputChan <- m.textarea.Value()
-				m.textarea.SetValue("")
-			}
-		}
 
-	// We handle errors just like any other message
 	case errMsg:
 		m.err = msg
 		return m, nil
@@ -57,6 +48,10 @@ func (m Model) View() string {
 
 func (m Model) Value() string {
 	return m.textarea.Value()
+}
+
+func (m *Model) SetValue(value string) {
+	m.textarea.SetValue(value)
 }
 
 func (m *Model) Blur() {
