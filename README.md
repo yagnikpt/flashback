@@ -119,6 +119,7 @@ flashback/
 │   ├── components/        # Reusable UI components
 │   ├── migration/         # Database migrations
 │   ├── notes/             # Notes business logic and AI integration
+│   ├── contentloaders/    # Logic to get data from web and other sources
 │   └── config/            # Config save and load helpers
 ├── Makefile               # Build and development commands
 └── README.md

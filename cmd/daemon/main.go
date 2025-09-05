@@ -40,7 +40,8 @@ func main() {
 	}
 	defer db.Close()
 
-	db.Exec("PRAGMA journal_mode=WAL")
+	_, _ = db.Exec("PRAGMA journal_mode=WAL;")
+	_, _ = db.Exec("PRAGMA busy_timeout=5000;")
 
 	err = migration.Migrate(db)
 	if err != nil {

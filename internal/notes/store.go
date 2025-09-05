@@ -28,7 +28,7 @@ func NewStore(db *sql.DB, apiKey string) *Store {
 	if err != nil {
 		log.Fatal(err)
 	}
-	statusChan := make(chan string)
+	statusChan := make(chan string, 16)
 
 	return &Store{
 		db:         db,
@@ -114,7 +114,7 @@ func (s *Store) CreateNote(content string) error {
 			},
 		}
 
-		input := "Identify the time given in the provided note for using the time in notification. Current date and time is " + time.Now().Format("2006-01-02 15:04 PM.") + "\n\n" + "Note: " + content
+		input := "Identify the time given in the provided note for using the time in notification. Current date and time is " + time.Now().Format("2006-01-02 15:04") + "\n\n" + "Note: " + content
 		result, err := s.genai.Models.GenerateContent(
 			ctx,
 			"gemini-2.5-flash",
@@ -244,7 +244,7 @@ func (s *Store) Recall(userQuery string) (string, error) {
 		INNER JOIN chunks c ON n.id = c.note_id
 		INNER JOIN embeddings e ON c.id = e.chunk_id
 		WHERE vector_distance_cos(e.vector, vector32(?)) > 0.25
-		ORDER BY vector_distance_cos(e.vector, vector32(?)) ASC`
+		ORDER BY vector_distance_cos(e.vector, vector32(?)) ASC LIMIT 20`
 
 	rows, err := s.db.Query(query, string(embeddings), string(embeddings))
 	if err != nil {
