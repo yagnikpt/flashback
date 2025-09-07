@@ -9,7 +9,7 @@ import (
 )
 
 type Store struct {
-	Mode         string
+	Mode         ModeState
 	Width        int
 	Height       int
 	Loading      bool
@@ -23,7 +23,7 @@ var once sync.Once
 
 func InitStore(db *sql.DB, config config.Config) *Store {
 	once.Do(func() {
-		instance = &Store{Mode: "note", Width: 0, Height: 0, Loading: false, ShowFeedback: false, Notes: notes.NewStore(db, config.APIKey), Config: config}
+		instance = &Store{Mode: StateNote, Width: 0, Height: 0, Loading: false, ShowFeedback: false, Notes: notes.NewStore(db, config.APIKey), Config: config}
 	})
 	return instance
 }

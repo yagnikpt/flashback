@@ -4,7 +4,6 @@ import "github.com/charmbracelet/bubbles/v2/key"
 
 type createKeyMap struct {
 	Help       key.Binding
-	Quit       key.Binding
 	Create     key.Binding
 	ChangeMode key.Binding
 	NewLine    key.Binding
@@ -12,7 +11,6 @@ type createKeyMap struct {
 
 type recallKeyMap struct {
 	Help       key.Binding
-	Quit       key.Binding
 	Recall     key.Binding
 	ChangeMode key.Binding
 	NewLine    key.Binding
@@ -24,7 +22,6 @@ type deleteKeyMap struct {
 	Left       key.Binding
 	Right      key.Binding
 	Help       key.Binding
-	Quit       key.Binding
 	Delete     key.Binding
 	ChangeMode key.Binding
 	EditMode   key.Binding
@@ -36,8 +33,8 @@ func (k createKeyMap) ShortHelp() []key.Binding {
 
 func (k createKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.ChangeMode, k.Create, k.NewLine},
-		{k.Help, k.Quit},
+		{k.ChangeMode, k.Create},
+		{k.NewLine, k.Help},
 	}
 }
 
@@ -47,8 +44,8 @@ func (k recallKeyMap) ShortHelp() []key.Binding {
 
 func (k recallKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.ChangeMode, k.Recall, k.NewLine},
-		{k.Help, k.Quit},
+		{k.ChangeMode, k.Recall},
+		{k.NewLine, k.Help},
 	}
 }
 
@@ -60,7 +57,7 @@ func (k deleteKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.ChangeMode, k.Delete},
 		{k.Left, k.Down, k.Up, k.Right},
-		{k.Help, k.Quit},
+		{k.Help},
 	}
 }
 
@@ -68,10 +65,6 @@ var createKeys = createKeyMap{
 	Help: key.NewBinding(
 		key.WithKeys("alt+?"),
 		key.WithHelp("alt+?", "toggle help"),
-	),
-	Quit: key.NewBinding(
-		key.WithKeys("esc", "ctrl+c"),
-		key.WithHelp("esc,ctrl+c", "quit"),
 	),
 	Create: key.NewBinding(
 		key.WithKeys("enter"),
@@ -91,10 +84,6 @@ var recallKeys = recallKeyMap{
 	Help: key.NewBinding(
 		key.WithKeys("alt+?"),
 		key.WithHelp("alt+?", "toggle help"),
-	),
-	Quit: key.NewBinding(
-		key.WithKeys("esc", "ctrl+c"),
-		key.WithHelp("esc,ctrl+c", "quit"),
 	),
 	Recall: key.NewBinding(
 		key.WithKeys("enter"),
@@ -130,10 +119,6 @@ var deleteKeys = deleteKeyMap{
 	Help: key.NewBinding(
 		key.WithKeys("alt+?"),
 		key.WithHelp("alt+?", "toggle help"),
-	),
-	Quit: key.NewBinding(
-		key.WithKeys("esc", "ctrl+c"),
-		key.WithHelp("esc,ctrl+c", "quit"),
 	),
 	Delete: key.NewBinding(
 		key.WithKeys("enter"),

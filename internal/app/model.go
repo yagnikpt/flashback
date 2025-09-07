@@ -59,19 +59,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			m.store.ShowFeedback = false
+			m.store.Mode.NextMode()
 			switch m.store.Mode {
-			case "note":
+			case global.StateNote:
+				cmds = append(cmds, m.note.Init())
+			case global.StateRecall:
 				cmds = append(cmds, m.recall.Init())
-				m.store.Mode = "recall"
-			case "recall":
-				m.store.Mode = "delete"
+			case global.StateDelete:
 				cmds = append(cmds, m.notelist.Init())
-			case "delete":
-				cmds = append(cmds, m.note.Init())
-				m.store.Mode = "note"
-			case "edit":
-				cmds = append(cmds, m.note.Init())
-				m.store.Mode = "note"
 			}
 		case "alt+?":
 			if m.store.Config.ShowHelp {
@@ -88,19 +83,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch m.store.Mode {
-	case "note":
+	case global.StateNote:
 		m.note, cmd = m.note.Update(msg)
 		cmds = append(cmds, cmd)
-	case "recall":
+	case global.StateRecall:
 		m.recall, cmd = m.recall.Update(msg)
 		cmds = append(cmds, cmd)
-	case "delete":
-		m.notelist, cmd = m.notelist.Update(msg)
-		cmds = append(cmds, cmd)
-	case "edit":
+	case global.StateDelete:
 		m.notelist, cmd = m.notelist.Update(msg)
 		cmds = append(cmds, cmd)
 	}
+
 	return m, tea.Batch(cmds...)
 }
 
@@ -108,25 +101,23 @@ func (m Model) View() string {
 	header := "⚡Flashback"
 	modeIndicator := "Mode:" + " "
 	switch m.store.Mode {
-	case "note":
-		modeIndicator += primaryBackground.Render(m.store.Mode)
-	case "recall":
-		modeIndicator += secondaryBackground.Render(m.store.Mode)
-	case "delete":
-		modeIndicator += dangerBackground.Render(m.store.Mode)
+	case global.StateNote:
+		modeIndicator += primaryBackground.Render(m.store.Mode.String())
+	case global.StateRecall:
+		modeIndicator += secondaryBackground.Render(m.store.Mode.String())
+	case global.StateDelete:
+		modeIndicator += dangerBackground.Render(m.store.Mode.String())
 	}
 
 	var tui strings.Builder
 
 	tui.WriteString(header + "\n\n" + modeIndicator + "\n\n")
 	switch m.store.Mode {
-	case "note":
+	case global.StateNote:
 		tui.WriteString(m.note.View() + "\n\n")
-	case "recall":
+	case global.StateRecall:
 		tui.WriteString(m.recall.View() + "\n\n")
-	case "delete":
-		tui.WriteString(m.notelist.View() + "\n\n")
-	case "edit":
+	case global.StateDelete:
 		tui.WriteString(m.notelist.View() + "\n\n")
 	}
 

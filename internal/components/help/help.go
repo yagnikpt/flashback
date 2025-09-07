@@ -52,13 +52,13 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	switch m.store.Mode {
-	case "create":
+	case global.StateNote:
 		m.createHelp, cmd = m.createHelp.Update(msg)
 		cmds = append(cmds, cmd)
-	case "delete":
+	case global.StateDelete:
 		m.deleteHelp, cmd = m.deleteHelp.Update(msg)
 		cmds = append(cmds, cmd)
-	case "recall":
+	case global.StateRecall:
 		m.recallHelp, cmd = m.recallHelp.Update(msg)
 		cmds = append(cmds, cmd)
 	default:
@@ -69,11 +69,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 func (m Model) View() string {
 	switch m.store.Mode {
-	case "create":
+	case global.StateNote:
 		return m.createHelp.View(m.createKeys)
-	case "delete":
+	case global.StateDelete:
 		return m.deleteHelp.View(m.deleteKeys)
-	case "recall":
+	case global.StateRecall:
 		return m.recallHelp.View(m.recallKeys)
 	default:
 		return m.createHelp.View(m.createKeys)
