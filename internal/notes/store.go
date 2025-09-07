@@ -19,6 +19,7 @@ type Store struct {
 	db         *sql.DB
 	genai      *genai.Client
 	StatusChan chan string
+	mu         sync.Mutex
 }
 
 func NewStore(db *sql.DB, apiKey string) *Store {
@@ -40,9 +41,11 @@ func NewStore(db *sql.DB, apiKey string) *Store {
 func (s *Store) CreateNote(content string) error {
 	ctx := context.Background()
 
+	s.mu.Lock()
 	query := `INSERT INTO notes DEFAULT VALUES RETURNING id`
 	var noteID int
 	err := s.db.QueryRow(query).Scan(&noteID)
+	s.mu.Unlock()
 	if err != nil {
 		return err
 	}
@@ -107,7 +110,7 @@ func (s *Store) CreateNote(content string) error {
 					Type: genai.TypeObject,
 					Properties: map[string]*genai.Schema{
 						"title": {Type: genai.TypeString, Description: "The title to show in notification"},
-						"time":  {Type: genai.TypeString, Description: "The time mentioned for notification in format YYYY-MM-DD HH:MM AM/PM"},
+						"time":  {Type: genai.TypeString, Description: "The time mentioned for notification in format YYYY-MM-DD HH:MM"},
 					},
 					PropertyOrdering: []string{"title", "time"},
 				},
@@ -140,16 +143,19 @@ func (s *Store) CreateNote(content string) error {
 		}
 
 		if len(notifications) > 0 {
+			log.Println(notifications)
 			s.StatusChan <- "Setting notifications..."
 		}
 
 		for _, notification := range notifications {
-			parsedTime, err := time.ParseInLocation("2006-01-02 15:04 PM", notification.Time, time.Local)
+			parsedTime, err := time.ParseInLocation("2006-01-02 15:04", notification.Time, time.Local)
 			if err != nil {
 				log.Println("Error parsing time:", err)
 				continue
 			}
+			s.mu.Lock()
 			_, err = s.db.Exec("INSERT INTO notifications (title, time, note_id) VALUES (?, ?, ?)", notification.Title, parsedTime.In(time.UTC), noteID)
+			s.mu.Unlock()
 			if err != nil {
 				log.Println("Error inserting notification:", err)
 				continue
@@ -181,9 +187,11 @@ func (s *Store) CreateNote(content string) error {
 	}
 
 	for index, chunk := range chunks {
+		s.mu.Lock()
 		query := `INSERT INTO chunks (note_id, content, chunk_number) VALUES (?, ?, ?) RETURNING id`
 		var chunkID int
 		err := s.db.QueryRow(query, noteID, chunk, index+1).Scan(&chunkID)
+		s.mu.Unlock()
 		if err != nil {
 			return err
 		}
@@ -208,7 +216,9 @@ func (s *Store) CreateNote(content string) error {
 			return err
 		}
 
+		s.mu.Lock()
 		_, err = s.db.Exec("INSERT INTO embeddings (chunk_id, vector) VALUES (?, vector32(?))", chunkID, string(embeddings))
+		s.mu.Unlock()
 		if err != nil {
 			return err
 		}
@@ -231,14 +241,17 @@ func (s *Store) Recall(userQuery string) (string, error) {
 		},
 	)
 	if err != nil {
+		log.Println("Recall: Error embedding query:", err)
 		return "", err
 	}
 
 	embeddings, err := json.Marshal(result.Embeddings[0].Values)
 	if err != nil {
+		log.Println("Recall: Error marshaling embeddings:", err)
 		return "", err
 	}
 
+	s.mu.Lock()
 	query := `SELECT n.id, n.created_at, c.id AS chunk_id, c.content, c.chunk_number
 		FROM notes n
 		INNER JOIN chunks c ON n.id = c.note_id
@@ -247,7 +260,9 @@ func (s *Store) Recall(userQuery string) (string, error) {
 		ORDER BY vector_distance_cos(e.vector, vector32(?)) ASC LIMIT 20`
 
 	rows, err := s.db.Query(query, string(embeddings), string(embeddings))
+	s.mu.Unlock()
 	if err != nil {
+		log.Println("Recall: Error querying DB:", err)
 		return "", err
 	}
 	defer rows.Close()
@@ -258,14 +273,15 @@ func (s *Store) Recall(userQuery string) (string, error) {
 		note := CombinedNote{}
 		err = rows.Scan(&note.ID, &note.CreatedAt, &note.ChunkID, &note.Content, &note.ChunkNumber)
 		if err != nil {
+			log.Println("Recall: Error scanning row:", err)
 			return "", err
 		}
 		fetchedChunks = append(fetchedChunks, note)
 	}
 	if err = rows.Err(); err != nil {
+		log.Println("Recall: Rows error:", err)
 		return "", err
 	}
-
 	// log.Println(len(fetchedChunks), "records populated")
 
 	// for _, chunk := range fetchedChunks {
@@ -284,15 +300,15 @@ func (s *Store) Recall(userQuery string) (string, error) {
 	config := &genai.GenerateContentConfig{
 		SystemInstruction: genai.NewContentFromText(string(utils.RetrievalPrompt), genai.RoleUser),
 	}
-
 	response, err := s.genai.Models.GenerateContent(
 		ctx,
-		"gemini-2.5-flash",
+		"gemini-2.5-flash-lite",
 		genai.Text(finalInput),
 		config,
 	)
 
 	if err != nil {
+		log.Println("Recall: Error in final genai:", err)
 		return "", err
 	}
 
@@ -301,7 +317,9 @@ func (s *Store) Recall(userQuery string) (string, error) {
 }
 
 func (s *Store) GetAllNotes() (notes []CombinedNote, e error) {
+	s.mu.Lock()
 	rows, err := s.db.Query(`SELECT n.id, n.created_at, c.content, c.id AS chunk_id, c.chunk_number FROM notes n INNER JOIN chunks c ON n.id = c.note_id WHERE c.chunk_number = 1 ORDER BY n.created_at DESC`)
+	s.mu.Unlock()
 	if err != nil {
 		return nil, err
 	}
@@ -318,11 +336,12 @@ func (s *Store) GetAllNotes() (notes []CombinedNote, e error) {
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-
 	return notes, nil
 }
 
 func (s *Store) DeleteNote(id int) error {
+	s.mu.Lock()
 	_, err := s.db.Exec("DELETE FROM notes WHERE id = ?", id)
+	s.mu.Unlock()
 	return err
 }

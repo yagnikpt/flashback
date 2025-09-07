@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/muesli/reflow/wordwrap"
+	"github.com/yagnikpt/flashback/internal/components/note"
 	"github.com/yagnikpt/flashback/internal/global"
 	"github.com/yagnikpt/flashback/internal/notes"
 	"github.com/yagnikpt/flashback/internal/utils"
@@ -49,6 +50,7 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+	// log.Printf("notelist Update called with msg: %T", msg)
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -88,6 +90,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		if success {
 			cmds = append(cmds, getNotesCmd(m))
 		}
+
+	case note.NoteAddedMsg:
+		cmds = append(cmds, getNotesCmd(m))
 
 	case tea.KeyPressMsg:
 		switch {

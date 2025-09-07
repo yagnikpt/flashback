@@ -55,6 +55,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "esc":
 			return m, tea.Quit
 		case "tab":
+			if m.store.Loading {
+				return m, nil
+			}
+			m.store.ShowFeedback = false
 			switch m.store.Mode {
 			case "note":
 				cmds = append(cmds, m.recall.Init())
@@ -90,13 +94,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case "recall":
 		m.recall, cmd = m.recall.Update(msg)
 		cmds = append(cmds, cmd)
-		// case "delete":
-		// case "edit":
-		// 	m.notelist, cmd = m.notelist.Update(msg)
-		// 	cmds = append(cmds, cmd)
+	case "delete":
+		m.notelist, cmd = m.notelist.Update(msg)
+		cmds = append(cmds, cmd)
+	case "edit":
+		m.notelist, cmd = m.notelist.Update(msg)
+		cmds = append(cmds, cmd)
 	}
-	m.notelist, cmd = m.notelist.Update(msg)
-	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 

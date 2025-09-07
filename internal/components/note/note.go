@@ -11,12 +11,10 @@ import (
 )
 
 type Model struct {
-	textarea     textarea.Model
-	spinner      spinner.Model
-	store        *global.Store
-	loading      bool
-	showFeedback bool
-	output       string
+	textarea textarea.Model
+	spinner  spinner.Model
+	store    *global.Store
+	output   string
 }
 
 func NewModel() Model {
@@ -25,12 +23,10 @@ func NewModel() Model {
 	textarea.SetHeight(5)
 	textarea.SetPlaceholder("Enter the note...")
 	return Model{
-		textarea:     textarea,
-		spinner:      spinner.NewModel(),
-		output:       "",
-		store:        store,
-		loading:      false,
-		showFeedback: false,
+		textarea: textarea,
+		spinner:  spinner.NewModel(),
+		output:   "",
+		store:    store,
 	}
 }
 
@@ -43,15 +39,15 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-	case noteAddedMsg:
-		m.loading = false
+	case NoteAddedMsg:
+		m.store.Loading = false
 		status := bool(msg)
 		if status {
-			m.showFeedback = true
+			m.store.ShowFeedback = true
 			m.output = "Note saved successfully."
 			m.textarea.SetPlaceholder("Add a new note...")
 		} else {
-			m.showFeedback = true
+			m.store.ShowFeedback = true
 			m.output = "Error saving note."
 			m.textarea.SetPlaceholder("Try again...")
 		}
@@ -64,16 +60,17 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "enter":
-			if m.loading {
+			if m.store.Loading {
 				return m, nil
 			}
 			if m.textarea.Value() != "" {
+				m.store.ShowFeedback = false
+				m.store.Loading = true
 				cmds = append(cmds, readStatusText(m.store.Notes.StatusChan), addNoteCmd(m, m.textarea.Value()))
 				m.textarea.SetValue("")
+				m.store.Loading = true
+				m.spinner.SetDisplayText("Creating note...")
 			}
-			m.loading = true
-			m.spinner.SetDisplayText("Creating note...")
-			cmds = append(cmds, addNoteCmd(m, m.textarea.Value()))
 		}
 	}
 
@@ -88,13 +85,13 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 func (m Model) View() string {
 	var tui strings.Builder
 
-	if m.loading {
+	if m.store.Loading {
 		tui.WriteString(m.spinner.View() + "\n\n")
 	} else {
 		tui.WriteString(m.textarea.View() + "\n\n")
 	}
 
-	if m.showFeedback {
+	if m.store.ShowFeedback {
 		wrappedOutput := wordwrap.String(m.output, m.store.Width-4)
 		tui.WriteString(wrappedOutput + "\n\n")
 	}
