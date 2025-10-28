@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "github.com/tursodatabase/go-libsql"
+	_ "github.com/tursodatabase/turso-go"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 
@@ -45,7 +45,7 @@ func main() {
 	}
 	defer f.Close()
 
-	db, err := sql.Open("libsql", "file:"+filepath.Join(dataDir, "flashback.db"))
+	db, err := sql.Open("turso", filepath.Join(dataDir, "flashback.db"))
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/gen2brain/beeep"
-	_ "github.com/tursodatabase/go-libsql"
+	_ "github.com/tursodatabase/turso-go"
 	"github.com/yagnikpt/flashback/internal/migration"
 	"github.com/yagnikpt/flashback/internal/utils"
 )
@@ -34,7 +34,7 @@ func main() {
 
 	log.SetOutput(logFile)
 
-	db, err := sql.Open("libsql", "file:"+filepath.Join(dataDir, "flashback.db"))
+	db, err := sql.Open("turso", filepath.Join(dataDir, "flashback.db"))
 	if err != nil {
 		log.Fatal(err)
 	}

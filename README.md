@@ -28,14 +28,9 @@ A powerful command-line tool that serves as your second memory, intelligently st
 
 ## 🚀 Installation
 
-### Limitations
-- I'm using **go-libsql** (i'll switch to something else in future) which uses CGO. You need a C compiler to build it.
-- This package comes with a precompiled native libraries. Currently only linux amd64, linux arm64, darwin amd64 and darwin arm64 are supported. For windows you manually need to compile the native libraries yourself. https://github.com/tursodatabase/libsql/releases
-
 ### Prerequisites
 - Go 1.24.4 or later
 - Google AI API key (for Gemini embeddings)
-- C compiler (go-libsql uses CGO)
 
 ### Option 1: Build from Source
 ```bash
