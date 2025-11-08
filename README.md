@@ -15,9 +15,9 @@ A powerful command-line tool that serves as your second memory, intelligently st
 
 ### 🎯 Three Modes
 1. **Note Mode**: Quickly capture thoughts, ideas, and information
-    - **URL Mode**: Fetch content from URLs. usage -> web:https://example.com
-    - **File Mode**: Use content from files (only text files for now). usage -> file:/path/to/file.txt
-    - **Clipboard Mode**: Use content from clipboard. usage -> #clipboard
+    - **URL Mode**: Fetch content from URLs. usage -> `web:https://example.com`
+    - **File Mode**: Use content from files (only text files for now). usage -> `file:/path/to/file.txt`
+    - **Clipboard Mode**: Use content from clipboard. usage -> `#clipboard`
 2. **Recall Mode**: Query your notes using natural language to get intelligent summaries
 3. **Delete Mode**: Browse and manage your existing notes with easy deletion
 
@@ -32,17 +32,17 @@ A powerful command-line tool that serves as your second memory, intelligently st
 - Go 1.24.4 or later
 - Google AI API key (for Gemini embeddings)
 
-### Option 1: Build from Source
+### Option 1: Build from Source (linux and mac)
 ```bash
 # Clone the repository
 git clone https://github.com/yagnikpt/flashback.git
 cd flashback
 
-# Build the application
-make build
+# Build the application and moves it to /usr/local/bin
+make install
 
 # Run the application
-./flashback
+flashback
 ```
 
 ### Option 2: Direct Go Install
@@ -68,13 +68,10 @@ make run
 ```
 
 ### Notification Daemon Setup
-This will create a user level systemd service or a user level launchd service for the notification daemon.
+This feature is optional and will allow you to receive notifications based on your notes. For better experience, set it up as a background service.
 ```bash
-# build binary
-make build-daemon
-
-# setup daemon
-./setup-daemon.sh
+# start daemon
+flashback notifications
 ```
 
 ## ⚙️ Configuration
@@ -86,22 +83,7 @@ make build-daemon
 ## 🎮 Usage
 
 ### Basic Navigation
-- **Alt+?**: Toggle keys helper visibility
-
-### Example Workflows
-
-**Capturing Information:**
-```
-Mode: note
-> "Met with John about Q3 project timeline. Key deliverables due by July 15th"
-```
-
-**Recalling Information:**
-```
-Mode: recall
-> "What did John say about Q3?"
-Response: "John discussed Q3 project timeline with key deliverables due by July 15th"
-```
+- **Alt+?**: Toggle keys helper visibility.
 
 ## 🛠️ Development
 
@@ -114,6 +96,7 @@ flashback/
 │   ├── components/        # Reusable UI components
 │   ├── migration/         # Database migrations
 │   ├── notes/             # Notes business logic and AI integration
+│   ├── notifications/     # Notification daemon logic
 │   ├── contentloaders/    # Logic to get data from web and other sources
 │   └── config/            # Config save and load helpers
 ├── Makefile               # Build and development commands
@@ -122,8 +105,8 @@ flashback/
 
 ### Key Technologies
 - **[Bubble Tea](https://github.com/charmbracelet/bubbletea)**: Modern TUI framework
-- **[LibSQL](https://github.com/tursodatabase/go-libsql)**: SQLite-compatible database
-- **[Google Generative AI](https://pkg.go.dev/google.golang.org/genai)**: Embeddings and text generation
+- **[Turso](https://github.com/tursodatabase/turso-go)**: SQLite-compatible database
+- **[Google Generative AI](https://github.com/googleapis/go-genai)**: Embeddings and text generation
 - **[Goose](https://github.com/pressly/goose)**: Database migrations
 
 ### Available Make Commands
@@ -131,19 +114,20 @@ flashback/
 make build    # Build the binary
 make run      # Run in development mode
 make tidy     # Clean up dependencies
+make install  # Build and install to /usr/local/bin
 ```
 
 ## 🔮 Future Features
 
-### 🌐 Web Content Integration
+### 🌐 Web Content Integration [✅ Rough Implementation]
 - **Content Scraping**: Extract information directly from web pages to load context into notes
 - **URL Processing**: Automatically detect URLs and generate summaries
 
-### 📁 Attach Local Files
+### 📁 Attach Local Files [❌ Just txt files for now]
 - **File Parsing**: Import and extract information from local files (PDF, TXT, DOCX, etc.)
 - **Directory Indexing**: Recursively scan directories to build a knowledge base from your files
 
-### ⏰ Smart Notifications
+### ⏰ Smart Notifications [✅ Done]
 - **Time & Date Extraction**: Automatically identify dates and times mentioned in your notes
 - **Notification System**: Run as a daemon to alert you about upcoming events extracted from notes
 - **Custom Reminders**: Set specific notification preferences for different types of information
@@ -153,6 +137,5 @@ make tidy     # Clean up dependencies
 #### Required Tools
 - Go 1.24.4+
 - Git
-- C compiler
 - Your favorite terminal
 - Text editor with Go support
