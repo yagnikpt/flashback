@@ -200,7 +200,7 @@ func (s *Store) CreateNote(content string) error {
 			genai.NewContentFromText(chunk, genai.RoleUser),
 		}
 		result, err := s.genai.Models.EmbedContent(ctx,
-			"gemini-embedding-exp-03-07",
+			"gemini-embedding-001",
 			contents,
 			&genai.EmbedContentConfig{
 				TaskType:             "RETRIEVAL_DOCUMENT",
@@ -233,7 +233,7 @@ func (s *Store) Recall(userQuery string) (string, error) {
 		genai.NewContentFromText(userQuery, genai.RoleUser),
 	}
 	result, err := s.genai.Models.EmbedContent(ctx,
-		"gemini-embedding-exp-03-07",
+		"gemini-embedding-001",
 		contents,
 		&genai.EmbedContentConfig{
 			TaskType:             "RETRIEVAL_QUERY",

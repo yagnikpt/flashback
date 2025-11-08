@@ -14,7 +14,7 @@ require (
 	github.com/pressly/goose/v3 v3.24.3
 	github.com/tmc/langchaingo v0.1.13
 	github.com/tursodatabase/turso-go v0.2.2
-	google.golang.org/genai v1.13.0
+	google.golang.org/genai v1.33.0
 )
 
 require (

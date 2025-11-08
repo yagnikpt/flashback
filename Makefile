@@ -15,14 +15,14 @@ build:
 	go build $(GOFLAGS) -o $(BINARY_NAME) $(SRC_DIR)
 
 # Build the daemon
-.PHONY: build-daemon
-build-daemon:
-	go build $(GOFLAGS) -o $(DAEMON_BINARY_NAME) $(DAEMON_DIR)
+# .PHONY: build-daemon
+# build-daemon:
+# 	go build $(GOFLAGS) -o $(DAEMON_BINARY_NAME) $(DAEMON_DIR)
 
 # Run the application
 .PHONY: run
-run:
-	go run $(SRC_DIR)
+run: build
+	./$(BINARY_NAME)
 
 # Run tidy
 .PHONY: tidy

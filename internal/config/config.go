@@ -31,10 +31,6 @@ func LoadConfig(filePath string) (Config, error) {
 }
 
 func SaveConfig(filePath string, cfg Config) error {
-	// if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
-	// 	return err
-	// }
-
 	f, err := os.Create(filePath)
 	if err != nil {
 		return err

@@ -1,8 +1,7 @@
 *.log
 .env
 *.db
-flashback
-flashbackd
+/flashback
 dist/
 .cache
 demo.tape
