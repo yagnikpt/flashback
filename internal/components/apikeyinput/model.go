@@ -1,10 +1,10 @@
-package apiprompt
+package apikeyinput
 
 import (
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/yagnikpt/flashback/internal/components/textarea"
 )
 
@@ -18,6 +18,7 @@ type Model struct {
 func NewModel() Model {
 	textarea := textarea.NewModel()
 	textarea.SetPlaceholder("Enter your Gemini API key...")
+	textarea.SetHeight(1)
 
 	return Model{
 		textarea: textarea,
@@ -31,7 +32,7 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
+	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
 			return m, tea.Quit
@@ -50,8 +51,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	header := "⚡Flashback"
 	var tui strings.Builder
-	tui.WriteString(header + "\n\n" + m.textarea.View() + "\n\n" + "Get your Gemini API key from https://aistudio.google.com/apikey")
+	tui.WriteString("\n" + m.textarea.View() + "\n\n" + "Get your Gemini API key from https://aistudio.google.com/api-keys")
 	return tui.String()
 }

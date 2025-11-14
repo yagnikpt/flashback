@@ -1,10 +1,10 @@
 package textarea
 
 import (
-	"github.com/charmbracelet/bubbles/v2/key"
-	"github.com/charmbracelet/bubbles/v2/textarea"
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/textarea"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 const (
@@ -86,8 +86,7 @@ func NewModel() Model {
 		key.WithHelp("shift+enter", "insert newline"),
 	)
 
-	// Remove cursor line styling
-	model.Styles.Focused.CursorLine = lipgloss.NewStyle()
+	model.FocusedStyle.CursorLine = lipgloss.NewStyle()
 
 	model.ShowLineNumbers = false
 

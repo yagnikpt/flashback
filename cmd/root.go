@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/yagnikpt/flashback/internal/app"
-	"github.com/yagnikpt/flashback/internal/tui"
+	"github.com/yagnikpt/flashback/internal/components/apikeyinput"
 )
 
 func NewRootCmd(app *app.App) *cobra.Command {
@@ -19,11 +19,13 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			tui.Run(app.DB, app.Config)
+			apikeyinput.Run("", app.Config)
+			// fmt.Println("fucked")
 		},
 	}
 
 	cmd.AddCommand(NewAddCmd(app))
+	cmd.AddCommand(NewSearchCmd(app))
 
 	return cmd
 }

@@ -7,9 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
-	tea "github.com/charmbracelet/bubbletea/v2"
+	_ "github.com/tursodatabase/turso-go"
+
 	"github.com/yagnikpt/flashback/cmd"
 	"github.com/yagnikpt/flashback/internal/app"
+	"github.com/yagnikpt/flashback/internal/components/apikeyinput"
 	"github.com/yagnikpt/flashback/internal/config"
 	"github.com/yagnikpt/flashback/internal/migration"
 	"github.com/yagnikpt/flashback/internal/utils"
@@ -34,12 +36,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	f, err := tea.LogToFile(filepath.Join(dataDir, "debug.log"), "debug")
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	logFile := filepath.Join(dataDir, "debug.log")
+	fLog, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	log.SetOutput(fLog)
 	if err != nil {
 		fmt.Println("fatal:", err)
 		os.Exit(1)
 	}
-	defer f.Close()
+	defer fLog.Close()
 
 	db, err := sql.Open("turso", filepath.Join(dataDir, "flashback.db"))
 	if err != nil {
@@ -52,9 +57,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	app := &app.App{
-		DB:     db,
-		Config: cfg,
+	if cfg.APIKey == "" {
+		apikeyinput.Run(configFile, cfg)
+		cfg, _ = config.LoadConfig(configFile)
 	}
+
+	app := app.NewApp(db, cfg)
 	cmd.Execute(app)
 }
