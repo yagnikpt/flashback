@@ -24,7 +24,7 @@ Do not make up information. Omit keys that cannot be found.
 
 Extraction rules:
 - tldr → Short one-sentence context about the content. Only when content is long and detailed.
-- tags → Array of strings. Extract from visible tags or keywords if present.
+- tags → Array of strings in format []. Extract from visible tags or keywords if present.
 
 Return JSON according to schema.
 Do not include null or empty fields.
@@ -42,10 +42,9 @@ If you only see text like 'Something went wrong' or something similar that indic
 
 Extraction rules:
 - image → Prefer og:image, twitter:image, or main article image. Try to pick a url which doesn't work on any authentication (like token sessions) if possible.
-- image_main → "true" if the image is the main focus of the page (eg. image gallery, portfolio, product page, pintrest, reddit). Omit otherwise. You can also guess based on page url.
-- content → Main textual content only. Exclude navbars, sidebars, ads, or unrelated text. Make sure content is not repeated.
+- image_main → "true" if the image is the main focus of the page (eg. image gallery, visuals portfolio, product page, pintrest, reddit). Omit when the image is there to support the main subject of the page. You can also guess based on page url.
 - tldr → Short one-sentence context about the page or image.
-- tags → Array of strings. Extract from <meta> or keywords if present. Related to page not to page content. You can also infer from the platform, eg 'Github', 'Pinterest', 'Post', 'Profile' etc.
+- tags → Array of strings in format []. Extract from <meta> or keywords if present. Related to page not to page content. You can also infer from the platform, eg 'Github', 'Pinterest', 'Post', 'Profile' etc.
 - description → From <meta name="description">, og:description, or short intro text.
 
 Return JSON according to schema.
@@ -62,7 +61,7 @@ If a field cannot be inferred from the image, omit it completely. Never guess or
 
 Extraction rules:
 - tldr → Provide a short, one-sentence summary or context of the image.
-- tags → Provide a concise array of relevant tags or concepts about the image.
+- tags → Array of strings in format []. Provide a concise array of relevant tags or concepts about the image.
 
 Guidelines:
 - Focus on what is visible — objects, scenes, people, text, or context.

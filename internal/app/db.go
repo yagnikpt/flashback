@@ -2,9 +2,11 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 
 	"github.com/lithammer/shortuuid/v4"
+	"github.com/yagnikpt/flashback/internal/models"
 )
 
 func (app *App) InsertNote(content, dataType string, metadata map[string]string, embeddings []float32) error {
@@ -47,7 +49,7 @@ func (app *App) InsertNote(content, dataType string, metadata map[string]string,
 	return nil
 }
 
-func (app *App) RetrieveNotesBySimilarity(vector []float32) ([]FlashbackWithMetadata, error) {
+func (app *App) RetrieveNotesBySimilarity(vector []float32) ([]models.FlashbackWithMetadata, error) {
 	embeddings, err := json.Marshal(vector)
 	if err != nil {
 		return nil, err
@@ -89,7 +91,7 @@ func (app *App) RetrieveNotesBySimilarity(vector []float32) ([]FlashbackWithMeta
 	// 	fmt.Println()
 	// }
 
-	flashbacks := []FlashbackWithMetadata{}
+	flashbacks := []models.FlashbackWithMetadata{}
 	idIndex := make(map[string]int)
 	for rows.Next() {
 		var id, content, dataType, createdAt, key, value string
@@ -101,13 +103,12 @@ func (app *App) RetrieveNotesBySimilarity(vector []float32) ([]FlashbackWithMeta
 		if !exists {
 			idx = len(flashbacks)
 			idIndex[id] = idx
-			flashbacks = append(flashbacks, FlashbackWithMetadata{
-				Flashback: Flashback{
+			flashbacks = append(flashbacks, models.FlashbackWithMetadata{
+				Flashback: models.Flashback{
 					ID:        id,
 					Content:   content,
 					Type:      dataType,
 					CreatedAt: createdAt,
-					Title:     "",
 				},
 				Metadata: make(map[string]string),
 			})
@@ -118,4 +119,93 @@ func (app *App) RetrieveNotesBySimilarity(vector []float32) ([]FlashbackWithMeta
 	}
 
 	return flashbacks, nil
+}
+
+func (app *App) GetAllNotes() ([]models.FlashbackWithMetadata, error) {
+	query := `
+    SELECT f.id, f.content, f.type, f.created_at, m.key, m.value
+    FROM flashbacks f
+    LEFT JOIN metadata m ON f.id = m.flashback_id
+    ORDER BY f.created_at DESC
+    `
+
+	rows, err := app.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	flashbacks := []models.FlashbackWithMetadata{}
+	idIndex := make(map[string]int)
+	for rows.Next() {
+		var id, content, dataType, createdAt, key, value string
+		if err := rows.Scan(&id, &content, &dataType, &createdAt, &key, &value); err != nil {
+			return nil, err
+		}
+
+		idx, exists := idIndex[id]
+		if !exists {
+			idx = len(flashbacks)
+			idIndex[id] = idx
+			flashbacks = append(flashbacks, models.FlashbackWithMetadata{
+				Flashback: models.Flashback{
+					ID:        id,
+					Content:   content,
+					Type:      dataType,
+					CreatedAt: createdAt,
+				},
+				Metadata: make(map[string]string),
+			})
+		}
+		if key != "" {
+			flashbacks[idx].Metadata[key] = value
+		}
+	}
+
+	return flashbacks, nil
+}
+
+func (app *App) GetNoteByID(id string) (models.FlashbackWithMetadata, error) {
+	query := `
+    SELECT f.id, f.content, f.type, f.created_at, m.key, m.value
+    FROM flashbacks f
+    LEFT JOIN metadata m ON f.id = m.flashback_id
+    WHERE f.id = ?
+    `
+
+	rows, err := app.DB.Query(query, id)
+	if err != nil {
+		return models.FlashbackWithMetadata{}, err
+	}
+	defer rows.Close()
+
+	var flashback models.FlashbackWithMetadata
+	flashback.Metadata = make(map[string]string)
+	found := false
+
+	for rows.Next() {
+		var key, value string
+		if err := rows.Scan(&flashback.ID, &flashback.Content, &flashback.Type, &flashback.CreatedAt, &key, &value); err != nil {
+			return models.FlashbackWithMetadata{}, err
+		}
+		found = true
+		if key != "" {
+			flashback.Metadata[key] = value
+		}
+	}
+
+	if !found {
+		return models.FlashbackWithMetadata{}, sql.ErrNoRows
+	}
+
+	return flashback, nil
+}
+
+func (app *App) DeleteNoteByID(id string) error {
+	deleteQuery := `DELETE FROM flashbacks WHERE id = ?`
+	_, err := app.DB.Exec(deleteQuery, id)
+	if err != nil {
+		return err
+	}
+	return nil
 }

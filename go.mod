@@ -10,9 +10,11 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/lithammer/shortuuid/v4 v4.2.0
+	github.com/muesli/reflow v0.3.0
 	github.com/pressly/goose/v3 v3.26.0
 	github.com/spf13/cobra v1.10.1
 	github.com/tursodatabase/turso-go v0.2.2
+	golang.org/x/term v0.37.0
 	google.golang.org/genai v1.34.0
 )
 

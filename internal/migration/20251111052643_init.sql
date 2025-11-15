@@ -1,9 +1,8 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS flashbacks (
     id TEXT PRIMARY KEY,
-    title TEXT,
     content TEXT NOT NULL,
-    type TEXT CHECK(type IN ('url', 'text')),
+    type TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE IF NOT EXISTS embeddings (

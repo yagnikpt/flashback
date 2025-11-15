@@ -86,10 +86,6 @@ func (app *App) GenerateMetadataForWebNote(content string) (map[string]string, e
 					"type":        "string",
 					"description": "true or omitted. Whether the image is the main focus of the page.",
 				},
-				"content": map[string]any{
-					"type":        "string",
-					"description": "Main textual content of the page, excluding irrelevant UI text.",
-				},
 				"tldr": map[string]any{
 					"type":        "string",
 					"description": "Short summary (1 sentence) of the page or its content.",
@@ -133,8 +129,9 @@ func (app *App) GenerateMetadataForWebNote(content string) (map[string]string, e
 		if err != nil {
 			return nil, fmt.Errorf("%w", err)
 		}
+		priorityImage, imageMainOk := res["image_main"]
 		for k, v := range imageMetadata {
-			if k == "tags" {
+			if k == "tags" && imageMainOk && priorityImage == "true" {
 				if existingTags, exists := res["tags"]; exists && existingTags != "" {
 					var imageTags []string
 					var webPageTags []string
@@ -147,6 +144,7 @@ func (app *App) GenerateMetadataForWebNote(content string) (map[string]string, e
 						return nil, fmt.Errorf("error unmarshaling webpage tags: %w", err)
 					}
 					combinedTags := append(webPageTags, imageTags...)
+					combinedTags = utils.UniqueStrings(combinedTags)
 					combinedTagsJson, err := json.Marshal(combinedTags)
 					if err != nil {
 						return nil, fmt.Errorf("error marshaling combined tags: %w", err)
@@ -154,10 +152,12 @@ func (app *App) GenerateMetadataForWebNote(content string) (map[string]string, e
 					res["tags"] = string(combinedTagsJson)
 					continue
 				}
+			} else {
+				continue
 			}
 			if k == "tldr" {
 				if existingTldr, exists := res["tldr"]; exists && existingTldr != "" {
-					if priorityImageTldr, ok := res["image_main"]; ok && priorityImageTldr == "true" {
+					if imageMainOk && priorityImage == "true" {
 						res["tldr"] = v
 					}
 					continue

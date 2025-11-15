@@ -9,18 +9,22 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/yagnikpt/flashback/internal/app"
+	"github.com/yagnikpt/flashback/internal/utils"
 )
 
 func NewSearchCmd(app *app.App) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "search",
-		Short: "A brief description of your command",
-		Long: `A longer description that spans multiple lines and likely contains examples
- and usage of using your command. For example:
+		Use:     "search",
+		Aliases: []string{"s"},
+		Short:   "Search notes using semantic similarity",
+		Long: `Search for notes in the flashback database using semantic similarity. Provide a query string, and the tool will find notes with similar meanings based on embeddings.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Usage:
+  flashback search [query]
+
+Examples:
+  flashback search "machine learning concepts"
+  flashback search "buy groceries"`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				fmt.Println(cmd.Long)
@@ -32,7 +36,8 @@ to quickly create a Cobra application.`,
 			if err != nil {
 				fmt.Println("Error retrieving notes:", err)
 			}
-			fmt.Println(flashbacks)
+			output := utils.FormatMultipleNotesCompact(flashbacks)
+			fmt.Println(output)
 		},
 	}
 

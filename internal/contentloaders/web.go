@@ -41,9 +41,15 @@ func GetWebPage(target string) (string, error) {
 			return http.ErrUseLastResponse
 		},
 	}
+	req, err := http.NewRequest("GET", target, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("User-Agent", "facebookexternalhit/1.1")
+	req.Header.Set("sec-ch-ua", `"Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"`)
 
 	for {
-		resp, err := client.Get(target)
+		resp, err := client.Do(req)
 		if err != nil {
 			return "", err
 		}
