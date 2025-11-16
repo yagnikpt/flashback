@@ -45,7 +45,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	var cmd tea.Cmd
-	m.textarea, cmd = m.textarea.Update(msg)
+	var newTextarea tea.Model
+	newTextarea, cmd = m.textarea.Update(msg)
+	m.textarea = newTextarea.(textarea.Model)
 
 	return m, cmd
 }

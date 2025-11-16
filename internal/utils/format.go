@@ -22,7 +22,22 @@ var ignoreList = map[string]bool{
 }
 
 func FormatSingleNote(note models.FlashbackWithMetadata) string {
-	result := keyStyles.Render("\nID: ") + note.ID + "\n" + keyStyles.Render("Content: ") + note.Content + "\n\nMetadata:\n"
+	width, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		panic(err)
+	}
+
+	result := keyStyles.Render("\nID: ") + note.ID + "\n" + keyStyles.Render("Content: ")
+
+	if note.Type != "url" {
+		result += "\n"
+		content := wordwrap.String(note.Content, width-4)
+		result += content
+	} else {
+		result += note.Content
+	}
+
+	result += "\n\nMetadata:\n"
 	for key, value := range note.Metadata {
 		if ignoreList[key] {
 			continue
@@ -31,15 +46,20 @@ func FormatSingleNote(note models.FlashbackWithMetadata) string {
 			var tags []string
 			err := json.Unmarshal([]byte(value), &tags)
 			if err != nil {
-				result += "  " + keyStyles.Render(key) + ": " + value + "\n"
 				continue
 			}
 			value = stringJoin(tags, ", ")
 		}
+		if key == "image" {
+			result += "  " + keyStyles.Render(key) + ": " + value + "\n"
+			continue
+		}
+		value = wordwrap.String(value, width-len(key)-8)
+		value = strings.ReplaceAll(value, "\n", "\n"+strings.Repeat(" ", 4+len(key)))
 		result += "  " + keyStyles.Render(key) + ": " + value + "\n"
 	}
-	paddedResult := strings.ReplaceAll(result, "\n", "\n  ")
-	return paddedResult
+	// result = wordwrap.String(result, width)
+	return result
 }
 
 func FormatSingleNoteCompact(note models.FlashbackWithMetadata) string {

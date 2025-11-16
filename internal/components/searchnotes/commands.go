@@ -1,0 +1,47 @@
+package searchnotes
+
+import (
+	"log"
+	"os"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/yagnikpt/flashback/internal/models"
+	"golang.org/x/term"
+)
+
+type searchResultsMsg []models.FlashbackWithMetadata
+type relayChooseMsg models.FlashbackWithMetadata
+type dimensionsMsg struct {
+	width  int
+	height int
+}
+
+func searchNotesCmd(m Model, query string) tea.Cmd {
+	return func() tea.Msg {
+		embeddings, _ := m.app.GenerateEmbeddingForNote(query, "RETRIEVAL_QUERY")
+		flashbacks, err := m.app.RetrieveNotesBySimilarity(embeddings)
+		if err != nil {
+			log.Fatal("Error retrieving notes:", err)
+		}
+		return searchResultsMsg(flashbacks)
+	}
+}
+
+func relayChooseCmd(note models.FlashbackWithMetadata) tea.Cmd {
+	return func() tea.Msg {
+		return relayChooseMsg(note)
+	}
+}
+
+func getDimensionsCmd() tea.Cmd {
+	return func() tea.Msg {
+		width, height, err := term.GetSize(int(os.Stdout.Fd()))
+		if err != nil {
+			panic(err)
+		}
+		return dimensionsMsg{
+			width:  width,
+			height: height,
+		}
+	}
+}

@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/yagnikpt/flashback/internal/app"
+	"github.com/yagnikpt/flashback/internal/tui"
 )
 
 func NewRootCmd(app *app.App) *cobra.Command {
@@ -16,7 +16,7 @@ func NewRootCmd(app *app.App) *cobra.Command {
 
 It supports adding notes from text or web URLs, generating metadata, and performing similarity-based searches to help you recall information efficiently.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(cmd.Long)
+			tui.Run(app)
 		},
 	}
 

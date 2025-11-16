@@ -9,7 +9,6 @@ import (
 
 const (
 	defaultHeight    = 5
-	defaultWidth     = 40
 	defaultCharLimit = 0
 )
 
@@ -24,13 +23,17 @@ type Model struct {
 }
 
 func (m Model) Init() tea.Cmd {
-	return textarea.Blink
+	return tea.Batch(textarea.Blink, setWidthCmd())
 }
 
-func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case setWidthMsg:
+		width := int(msg)
+		m.textarea.SetWidth(width - 2)
+
 	case tea.WindowSizeMsg:
-		m.textarea.SetWidth(msg.Width - 4)
+		m.textarea.SetWidth(msg.Width - 2)
 
 	case errMsg:
 		m.err = msg
@@ -70,6 +73,10 @@ func (m *Model) SetHeight(height int) {
 	m.textarea.SetHeight(height)
 }
 
+func (m Model) Focused() bool {
+	return m.textarea.Focused()
+}
+
 func NewModel() Model {
 	model := textarea.New()
 	model.Placeholder = "Enter the note..."
@@ -78,15 +85,14 @@ func NewModel() Model {
 
 	model.Prompt = "┃ "
 	model.CharLimit = defaultCharLimit
+	model.FocusedStyle.Prompt = lipgloss.NewStyle().Foreground(lipgloss.Color("#94a3b8"))
+	model.BlurredStyle.Prompt = lipgloss.NewStyle().Foreground(lipgloss.Color("#525252"))
 
-	model.SetWidth(defaultWidth)
 	model.SetHeight(defaultHeight)
 	model.KeyMap.InsertNewline = key.NewBinding(
-		key.WithKeys("shift+enter"),
-		key.WithHelp("shift+enter", "insert newline"),
+		key.WithKeys("ctrl+enter"),
+		key.WithHelp("ctrl+enter", "insert newline"),
 	)
-
-	model.FocusedStyle.CursorLine = lipgloss.NewStyle()
 
 	model.ShowLineNumbers = false
 

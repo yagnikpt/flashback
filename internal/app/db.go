@@ -94,7 +94,8 @@ func (app *App) RetrieveNotesBySimilarity(vector []float32) ([]models.FlashbackW
 	flashbacks := []models.FlashbackWithMetadata{}
 	idIndex := make(map[string]int)
 	for rows.Next() {
-		var id, content, dataType, createdAt, key, value string
+		var id, content, dataType, createdAt string
+		var key, value sql.NullString
 		if err := rows.Scan(&id, &content, &dataType, &createdAt, &key, &value); err != nil {
 			return nil, err
 		}
@@ -113,8 +114,8 @@ func (app *App) RetrieveNotesBySimilarity(vector []float32) ([]models.FlashbackW
 				Metadata: make(map[string]string),
 			})
 		}
-		if key != "" {
-			flashbacks[idx].Metadata[key] = value
+		if key.Valid && key.String != "" {
+			flashbacks[idx].Metadata[key.String] = value.String
 		}
 	}
 
@@ -138,7 +139,8 @@ func (app *App) GetAllNotes() ([]models.FlashbackWithMetadata, error) {
 	flashbacks := []models.FlashbackWithMetadata{}
 	idIndex := make(map[string]int)
 	for rows.Next() {
-		var id, content, dataType, createdAt, key, value string
+		var id, content, dataType, createdAt string
+		var key, value sql.NullString
 		if err := rows.Scan(&id, &content, &dataType, &createdAt, &key, &value); err != nil {
 			return nil, err
 		}
@@ -157,8 +159,8 @@ func (app *App) GetAllNotes() ([]models.FlashbackWithMetadata, error) {
 				Metadata: make(map[string]string),
 			})
 		}
-		if key != "" {
-			flashbacks[idx].Metadata[key] = value
+		if key.Valid && key.String != "" {
+			flashbacks[idx].Metadata[key.String] = value.String
 		}
 	}
 
@@ -184,13 +186,13 @@ func (app *App) GetNoteByID(id string) (models.FlashbackWithMetadata, error) {
 	found := false
 
 	for rows.Next() {
-		var key, value string
+		var key, value sql.NullString
 		if err := rows.Scan(&flashback.ID, &flashback.Content, &flashback.Type, &flashback.CreatedAt, &key, &value); err != nil {
 			return models.FlashbackWithMetadata{}, err
 		}
 		found = true
-		if key != "" {
-			flashback.Metadata[key] = value
+		if key.Valid && key.String != "" {
+			flashback.Metadata[key.String] = value.String
 		}
 	}
 

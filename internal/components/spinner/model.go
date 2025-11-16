@@ -17,7 +17,12 @@ type Model struct {
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(m.spinner.Tick, getCurrentStatus(m))
+	cmds := []tea.Cmd{}
+	cmds = append(cmds, m.spinner.Tick)
+	if m.status != nil {
+		cmds = append(cmds, getCurrentStatus(m))
+	}
+	return tea.Batch(cmds...)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

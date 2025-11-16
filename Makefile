@@ -1,6 +1,6 @@
 # Variables
 BINARY_NAME=flashback
-SRC_DIR=./cmd/flashback
+SRC_DIR=.
 GOFLAGS=-ldflags="-s -w"
 
 # Default target
