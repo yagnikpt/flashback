@@ -1,6 +1,7 @@
 package searchnotes
 
 import (
+	"log"
 	"strings"
 	"time"
 
@@ -61,6 +62,14 @@ func NewModel(app *app.App) Model {
 	}
 }
 
+func (m *Model) ResetView() {
+	m.showFeedback = false
+	m.isLoading = false
+	m.activeNote = models.FlashbackWithMetadata{}
+	m.showingNote = false
+	m.textarea.Focus()
+}
+
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(m.textarea.Init(), m.spinner.Init(), getDimensionsCmd())
 }
@@ -71,6 +80,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case searchResultsMsg:
+		log.Println("searchMsg")
 		notes := []models.FlashbackWithMetadata(msg)
 		items := make([]list.Item, len(notes))
 		for i := range items {
@@ -87,16 +97,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.textarea.Blur()
 
 	case relayChooseMsg:
+		log.Println("chooseMsg")
 		note := models.FlashbackWithMetadata(msg)
 		m.activeNote = note
 		m.showingNote = true
 
 	case dimensionsMsg:
+		log.Println("dimensionsMsg")
 		dims := dimensionsMsg(msg)
 		m.list.SetHeight(dims.height - 8)
 		m.list.SetWidth(dims.width)
 
 	case tea.WindowSizeMsg:
+		log.Println("windowMsg")
 		m.list.SetHeight(msg.Height - 8)
 		m.list.SetWidth(msg.Width)
 
@@ -113,19 +126,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		case "enter":
-			m.showFeedback = false
 			query := m.textarea.Value()
 			if m.textarea.Focused() && query != "" {
+				m.showFeedback = false
 				m.isLoading = true
 				cmds = append(cmds, searchNotesCmd(m, query))
 				m.textarea.SetValue("")
+				cmds = append(cmds, m.spinner.Init())
 			}
 		}
 	}
 
-	newSpinner, cmd := m.spinner.Update(msg)
-	m.spinner = newSpinner.(spinner.Model)
-	cmds = append(cmds, cmd)
+	if m.isLoading {
+		newSpinner, cmd := m.spinner.Update(msg)
+		m.spinner = newSpinner.(spinner.Model)
+		// cmds = append(cmds, m.spinner.Init())
+		cmds = append(cmds, cmd)
+	}
 	newTextarea, cmd := m.textarea.Update(msg)
 	m.textarea = newTextarea.(textarea.Model)
 	cmds = append(cmds, cmd)
@@ -141,6 +158,7 @@ var (
 )
 
 func (m Model) View() string {
+	log.Println("paint")
 	var builder strings.Builder
 	if m.showingNote {
 		return docStyles(utils.FormatSingleNote(m.activeNote))

@@ -38,7 +38,7 @@ func NewModel(app *app.App) Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	return m.notelist.Init()
+	return tea.Batch(m.notelist.Init(), tea.SetWindowTitle("flashback"))
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -59,10 +59,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch m.active {
 			case screenListNotes:
 				cmd = m.notelist.Init()
+				m.notelist.ResetView()
 			case screenInsertNote:
 				cmd = m.insertnote.Init()
+				m.insertnote.ResetView()
 			case screenSearchNotes:
 				cmd = m.searchnotes.Init()
+				m.searchnotes.ResetView()
 			}
 			return m, cmd
 		}
@@ -87,7 +90,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 var (
-	tabStyles       = lipgloss.NewStyle().Padding(0, 1).Margin(0, 1).Background(lipgloss.Color("#262626")).Render
+	tabStyles       = lipgloss.NewStyle().Padding(0, 1).Margin(0, 1).Render
 	activeTabStyles = lipgloss.NewStyle().Padding(0, 1).Margin(0, 1).Background(lipgloss.Color("#5A696C")).Foreground(lipgloss.Color("#ffffff")).Bold(true).Render
 )
 

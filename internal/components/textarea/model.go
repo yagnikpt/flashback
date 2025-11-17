@@ -94,6 +94,7 @@ func NewModel() Model {
 		key.WithHelp("ctrl+enter", "insert newline"),
 	)
 
+	model.FocusedStyle.CursorLine = lipgloss.NewStyle()
 	model.ShowLineNumbers = false
 
 	return Model{

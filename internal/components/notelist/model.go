@@ -19,6 +19,11 @@ type Model struct {
 	activeNote  models.FlashbackWithMetadata
 }
 
+func (m *Model) ResetView() {
+	m.activeNote = models.FlashbackWithMetadata{}
+	m.showingNote = false
+}
+
 type item struct {
 	id, title, desc string
 }
@@ -42,7 +47,6 @@ func NewModel(app *app.App) Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	m.showingNote = false
 	return getAllNotesCmd(m)
 }
 
@@ -79,9 +83,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc":
-			m.showingNote = false
-			m.activeNote = models.FlashbackWithMetadata{}
-			return m, nil
+			if m.showingNote {
+				m.showingNote = false
+				m.activeNote = models.FlashbackWithMetadata{}
+				return m, nil
+			}
 		}
 	}
 

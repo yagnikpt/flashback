@@ -19,6 +19,12 @@ type Model struct {
 	isLoading    bool
 }
 
+func (m *Model) ResetView() {
+	m.showFeedback = false
+	m.isLoading = false
+	m.feedbackMsg = ""
+}
+
 func NewModel(app *app.App) Model {
 	t := textarea.NewModel()
 	s := spinner.NewModel(nil)
