@@ -4,7 +4,9 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/yagnikpt/flashback/internal/app"
@@ -23,8 +25,11 @@ Examples:
 			if len(args) == 0 {
 				fmt.Println("Please provide the ID of the note to remove.")
 			}
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
 			noteID := args[0]
-			err := app.DeleteNoteByID(noteID)
+			err := app.DeleteNoteByID(ctx, noteID)
 			if err != nil {
 				fmt.Println("Error removing note:", err)
 				return

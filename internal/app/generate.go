@@ -5,15 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/yagnikpt/flashback/internal/utils"
 	"google.golang.org/genai"
 )
 
-func (app *App) GenerateEmbeddingForNote(content, taskType string) ([]float32, error) {
-	ctx := context.Background()
+func (app *App) GenerateEmbeddingForNote(ctx context.Context, content, taskType string) ([]float32, error) {
 	contents := []*genai.Content{
 		genai.NewContentFromText(content, genai.RoleUser),
 	}
@@ -31,7 +29,7 @@ func (app *App) GenerateEmbeddingForNote(content, taskType string) ([]float32, e
 	return result.Embeddings[0].Values, nil
 }
 
-func (app *App) GenerateMetadataForSimpleNote(content string) (map[string]string, error) {
+func (app *App) GenerateMetadataForSimpleNote(ctx context.Context, content string) (map[string]string, error) {
 	config := &genai.GenerateContentConfig{
 		SystemInstruction: genai.NewContentFromText(string(utils.SimpleTextExtractionPrompt), genai.RoleUser),
 		ResponseMIMEType:  "application/json",
@@ -44,22 +42,21 @@ func (app *App) GenerateMetadataForSimpleNote(content string) (map[string]string
 				},
 				"tags": map[string]any{
 					"type":        "string",
-					"description": "Tags, topics, or keywords related to the text in string of array with [] format.",
+					"description": "Tags, topics, or keywords related to the text in string of array with [] format. Omit if none found.",
 				},
 			},
 			"additionalProperties": false,
 		},
 	}
 
-	ctx := context.Background()
 	result, err := app.Gemini.Models.GenerateContent(
 		ctx,
-		"gemini-2.5-flash",
+		"gemini-2.0-flash",
 		genai.Text(content),
 		config,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error generating simple note metadata: %w", err)
+		return nil, err
 	}
 
 	res := map[string]string{}
@@ -71,7 +68,7 @@ func (app *App) GenerateMetadataForSimpleNote(content string) (map[string]string
 	return res, nil
 }
 
-func (app *App) GenerateMetadataForWebNote(content string) (map[string]string, error) {
+func (app *App) GenerateMetadataForWebNote(ctx context.Context, content string) (map[string]string, error) {
 	config := &genai.GenerateContentConfig{
 		SystemInstruction: genai.NewContentFromText(string(utils.WebExtractionPrompt), genai.RoleUser),
 		ResponseMIMEType:  "application/json",
@@ -103,15 +100,20 @@ func (app *App) GenerateMetadataForWebNote(content string) (map[string]string, e
 		},
 	}
 
-	ctx := context.Background()
 	result, err := app.Gemini.Models.GenerateContent(
 		ctx,
-		"gemini-2.5-flash",
+		"gemini-2.0-flash",
 		genai.Text(content),
 		config,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error generating web metadata: %w", err)
+		errs := err.(genai.APIError)
+		return nil, genai.APIError{
+			Code:    errs.Code,
+			Message: errs.Message,
+			Status:  errs.Status,
+			Details: errs.Details,
+		}
 	}
 	if result.Text() == "" {
 		return nil, fmt.Errorf("empty response received from metadata generation")
@@ -120,15 +122,21 @@ func (app *App) GenerateMetadataForWebNote(content string) (map[string]string, e
 	res := map[string]string{}
 	err = json.Unmarshal([]byte(result.Text()), &res)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("error unmarshaling metadata")
 	}
 
 	image, ok := res["image"]
 	imageMain, imageMainOk := res["image_main"]
 	if ok && imageMainOk && imageMain == "true" {
-		imageMetadata, err := app.GenerateMetadataForImage(image)
+		imageMetadata, err := app.GenerateMetadataForImage(ctx, image)
 		if err != nil {
-			return nil, fmt.Errorf("%w", err)
+			errs := err.(genai.APIError)
+			return nil, genai.APIError{
+				Code:    errs.Code,
+				Message: errs.Message,
+				Status:  errs.Status,
+				Details: errs.Details,
+			}
 		}
 		for k, v := range imageMetadata {
 			if k == "tags" {
@@ -160,7 +168,7 @@ func (app *App) GenerateMetadataForWebNote(content string) (map[string]string, e
 	return res, nil
 }
 
-func (app *App) GenerateMetadataForImage(imageUrl string) (map[string]string, error) {
+func (app *App) GenerateMetadataForImage(ctx context.Context, imageUrl string) (map[string]string, error) {
 	resp, err := http.Get(imageUrl)
 	if err != nil {
 		return nil, err
@@ -168,7 +176,7 @@ func (app *App) GenerateMetadataForImage(imageUrl string) (map[string]string, er
 	defer resp.Body.Close()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	config := &genai.GenerateContentConfig{
@@ -193,17 +201,13 @@ func (app *App) GenerateMetadataForImage(imageUrl string) (map[string]string, er
 		{InlineData: &genai.Blob{Data: data, MIMEType: "image/jpeg"}},
 	}
 	contents := []*genai.Content{{Parts: parts}}
-	ctx := context.Background()
-	result, err := app.Gemini.Models.GenerateContent(ctx, "gemini-2.5-flash", contents, config)
+	result, err := app.Gemini.Models.GenerateContent(ctx, "gemini-2.0-flash", contents, config)
 	if err != nil {
-		errrr, _ := err.(genai.APIError)
-		log.Println(errrr)
-		return nil, fmt.Errorf("%s", errrr.Status)
+		return nil, err
 	}
 	res := map[string]string{}
 	err = json.Unmarshal([]byte(result.Text()), &res)
 	if err != nil {
-		log.Println(err)
 		return nil, fmt.Errorf("error unmarshaling image metadata: %w", err)
 	}
 

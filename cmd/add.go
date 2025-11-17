@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/yagnikpt/flashback/internal/app"
@@ -30,8 +32,8 @@ Examples:
 			statusChan := make(chan string)
 			errorChan := make(chan error)
 
-			// ctx, cancel := context.WithCancel(context.Background())
-			// defer cancel()
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
 
 			go func() {
 				words := strings.Join(args, " ")
@@ -39,14 +41,14 @@ Examples:
 				var noteType string
 				if len(args) == 1 && strings.HasPrefix(words, "http") {
 					statusChan <- "Fetching webpage content..."
-					pageContent, err := contentloaders.GetWebPage(words)
+					pageContent, err := contentloaders.GetWebPage(ctx, words)
 					if err != nil {
 						errorChan <- err
 						return
 					}
 					pageContentWithUrl := fmt.Sprintf("URL: %s\n\n%s", words, pageContent)
 					statusChan <- "Generating metadata for webpage..."
-					metadata, err = app.GenerateMetadataForWebNote(pageContentWithUrl)
+					metadata, err = app.GenerateMetadataForWebNote(ctx, pageContentWithUrl)
 					if err != nil {
 						errorChan <- err
 						return
@@ -54,7 +56,7 @@ Examples:
 					noteType = "url"
 				} else {
 					statusChan <- "Generating metadata for note..."
-					_metadata, err := app.GenerateMetadataForSimpleNote(words)
+					_metadata, err := app.GenerateMetadataForSimpleNote(ctx, words)
 					if err != nil {
 						errorChan <- err
 						return
@@ -71,12 +73,12 @@ Examples:
 					finalContent.WriteString(metadataLine)
 				}
 				statusChan <- "Saving the note..."
-				embeddings, err := app.GenerateEmbeddingForNote(finalContent.String(), "RETRIEVAL_DOCUMENT")
+				embeddings, err := app.GenerateEmbeddingForNote(ctx, finalContent.String(), "RETRIEVAL_DOCUMENT")
 				if err != nil {
 					errorChan <- err
 					return
 				}
-				err = app.InsertNote(words, noteType, metadata, embeddings)
+				err = app.InsertNote(ctx, words, noteType, metadata, embeddings)
 				if err != nil {
 					errorChan <- err
 				} else {

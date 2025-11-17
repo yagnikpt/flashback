@@ -4,8 +4,10 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/yagnikpt/flashback/internal/app"
@@ -30,9 +32,13 @@ Examples:
 				fmt.Println(cmd.Long)
 				return
 			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
 			words := strings.Join(args, " ")
-			embeddings, _ := app.GenerateEmbeddingForNote(words, "RETRIEVAL_QUERY")
-			flashbacks, err := app.RetrieveNotesBySimilarity(embeddings)
+			embeddings, _ := app.GenerateEmbeddingForNote(ctx, words, "RETRIEVAL_QUERY")
+			flashbacks, err := app.RetrieveNotesBySimilarity(ctx, embeddings)
 			if err != nil {
 				fmt.Println("Error retrieving notes:", err)
 			}

@@ -9,9 +9,8 @@ import (
 	"github.com/yagnikpt/flashback/internal/models"
 )
 
-func (app *App) InsertNote(content, dataType string, metadata map[string]string, embeddings []float32) error {
+func (app *App) InsertNote(ctx context.Context, content, dataType string, metadata map[string]string, embeddings []float32) error {
 	id := shortuuid.New()
-	ctx := context.Background()
 	tx, err := app.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -49,14 +48,12 @@ func (app *App) InsertNote(content, dataType string, metadata map[string]string,
 	return nil
 }
 
-func (app *App) RetrieveNotesBySimilarity(vector []float32) ([]models.FlashbackWithMetadata, error) {
+func (app *App) RetrieveNotesBySimilarity(ctx context.Context, vector []float32) ([]models.FlashbackWithMetadata, error) {
 	embeddings, err := json.Marshal(vector)
 	if err != nil {
 		return nil, err
 	}
 
-	// 0.40 distance threshold can be applied later if needed
-	// WHERE vector_distance_cos(e.vector, vector32(?)) < 0.40
 	query := `
     SELECT f.id, f.content, f.type, f.created_at, m.key, m.value
     FROM flashbacks f
@@ -66,30 +63,11 @@ func (app *App) RetrieveNotesBySimilarity(vector []float32) ([]models.FlashbackW
     ORDER BY vector_distance_cos(e.vector, vector32(?)) ASC LIMIT 20
     `
 
-	rows, err := app.DB.Query(query, string(embeddings), string(embeddings))
+	rows, err := app.DB.QueryContext(ctx, query, string(embeddings), string(embeddings))
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
-	// cols, _ := rows.Columns()
-	// vals := make([]any, len(cols))
-	// raw := make([][]byte, len(cols))
-
-	// for i := range vals {
-	// 	vals[i] = &raw[i]
-	// }
-
-	// for rows.Next() {
-	// 	if err := rows.Scan(vals...); err != nil {
-	// 		return nil, err
-	// 	}
-
-	// 	for i, col := range cols {
-	// 		fmt.Printf("%s=%s ", col, string(raw[i]))
-	// 	}
-	// 	fmt.Println()
-	// }
 
 	flashbacks := []models.FlashbackWithMetadata{}
 	idIndex := make(map[string]int)
@@ -122,7 +100,7 @@ func (app *App) RetrieveNotesBySimilarity(vector []float32) ([]models.FlashbackW
 	return flashbacks, nil
 }
 
-func (app *App) GetAllNotes() ([]models.FlashbackWithMetadata, error) {
+func (app *App) GetAllNotes(ctx context.Context) ([]models.FlashbackWithMetadata, error) {
 	query := `
     SELECT f.id, f.content, f.type, f.created_at, m.key, m.value
     FROM flashbacks f
@@ -130,7 +108,7 @@ func (app *App) GetAllNotes() ([]models.FlashbackWithMetadata, error) {
     ORDER BY f.created_at DESC
     `
 
-	rows, err := app.DB.Query(query)
+	rows, err := app.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +145,7 @@ func (app *App) GetAllNotes() ([]models.FlashbackWithMetadata, error) {
 	return flashbacks, nil
 }
 
-func (app *App) GetNoteByID(id string) (models.FlashbackWithMetadata, error) {
+func (app *App) GetNoteByID(ctx context.Context, id string) (models.FlashbackWithMetadata, error) {
 	query := `
     SELECT f.id, f.content, f.type, f.created_at, m.key, m.value
     FROM flashbacks f
@@ -175,7 +153,7 @@ func (app *App) GetNoteByID(id string) (models.FlashbackWithMetadata, error) {
     WHERE f.id = ?
     `
 
-	rows, err := app.DB.Query(query, id)
+	rows, err := app.DB.QueryContext(ctx, query, id)
 	if err != nil {
 		return models.FlashbackWithMetadata{}, err
 	}
@@ -203,9 +181,9 @@ func (app *App) GetNoteByID(id string) (models.FlashbackWithMetadata, error) {
 	return flashback, nil
 }
 
-func (app *App) DeleteNoteByID(id string) error {
+func (app *App) DeleteNoteByID(ctx context.Context, id string) error {
 	deleteQuery := `DELETE FROM flashbacks WHERE id = ?`
-	_, err := app.DB.Exec(deleteQuery, id)
+	_, err := app.DB.ExecContext(ctx, deleteQuery, id)
 	if err != nil {
 		return err
 	}

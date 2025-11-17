@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"strings"
 
@@ -44,8 +45,13 @@ func FormatSingleNote(note models.FlashbackWithMetadata) string {
 		}
 		if key == "tags" {
 			var tags []string
-			err := json.Unmarshal([]byte(value), &tags)
+			if value == "[]" || value == "" {
+				continue
+			}
+			jsonValue := strings.ReplaceAll(value, `'`, `"`)
+			err = json.Unmarshal([]byte(jsonValue), &tags)
 			if err != nil {
+				log.Println(err)
 				continue
 			}
 			value = stringJoin(tags, ", ")

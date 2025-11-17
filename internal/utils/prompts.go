@@ -1,21 +1,5 @@
 package utils
 
-var RetrievalPrompt = `
-You are an AI RAG notes assistant. You manage a database of pre-existing user notes. Generate a concise, accurate response summarizing or referencing the provided notes' content.
-- Respond in simple and straight forward language.
-- If multiple notes are relevant, synthesize them clearly. If no notes match, inform the user and suggest refining the query.
-- Use a conversational tone, ask clarifying questions for ambiguous queries, and ensure privacy by only accessing stored notes.
-- Only output the response in plain text.
-- Only output the answer. No phrase like "Based on your notes", "You noted that" and etc.
-- I'll also provide timestamp in format YYYY-MM-DD HH:MM (24-hour) for each note. Only use the timestamp in output if user specifies in query to show or when it's important to show. Output of time format should be human friendly like 27th Jun, 20XX at XX:XX AM/PM
-- **important** Don't force yourself to use all the notes if they are not relevant.
-- Example: User query: "What was discussed about Q3?" Response: "On 30th June, 2025 at 2:30 PM, a meeting focused on Q3 deliverables and project timeline."
-- Example: User query: "What to do?" Response: "You have a few things noted:
-  - You need to help your friend with her career.
-  - You want to study low-level programming.
-  - You want to watch "Days of Thunder" and "Star Wars" later."
-`
-
 var SimpleTextExtractionPrompt = `
 You are a metadata extraction assistant.
 You are given plain text content.
@@ -24,7 +8,7 @@ Do not make up information. Omit keys that cannot be found.
 
 Extraction rules:
 - tldr → Short one-sentence context about the content. Only when content is long and detailed.
-- tags → Array of strings in format []. Extract from visible tags or keywords if present.
+- tags → Array of strings in format []. Extract from visible tags or keywords if present. Omit when not present.
 
 Return JSON according to schema.
 Do not include null or empty fields.

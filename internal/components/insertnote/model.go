@@ -50,10 +50,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case addNoteMsg:
-		if bool(msg) {
-			m.feedbackMsg = "Note added successfully!"
+		res := addNoteMsg(msg)
+		if !res.success {
+			m.feedbackMsg = res.err.Error()
 		} else {
-			m.feedbackMsg = "Failed to add note."
+			m.feedbackMsg = "Note successfully added."
 		}
 		m.isLoading = false
 		m.showFeedback = true
@@ -82,13 +83,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.isLoading = true
 				cmds = append(cmds, addNoteCmd(m, noteContent))
 				m.textarea.SetValue("")
+				cmds = append(cmds, m.spinner.Init())
 			}
 		}
 	}
 
-	newSpinner, cmd := m.spinner.Update(msg)
-	m.spinner = newSpinner.(spinner.Model)
-	cmds = append(cmds, cmd)
+	if m.isLoading {
+		newSpinner, cmd := m.spinner.Update(msg)
+		m.spinner = newSpinner.(spinner.Model)
+		cmds = append(cmds, cmd)
+	}
 	newTextarea, cmd := m.textarea.Update(msg)
 	m.textarea = newTextarea.(textarea.Model)
 	cmds = append(cmds, cmd)

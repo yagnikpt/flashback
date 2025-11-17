@@ -47,7 +47,7 @@ func NewModel(app *app.App) Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	return getAllNotesCmd(m)
+	return tea.Batch(getAllNotesCmd(m), getDimensionsCmd())
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -76,6 +76,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, chooseNoteCmd(m, string(msg))
 	case relayDeleteMsg:
 		return m, deleteNoteCmd(m, string(msg))
+
+	case dimensionsMsg:
+		dims := dimensionsMsg(msg)
+		m.list.SetSize(dims.width, dims.height-3)
 
 	case tea.WindowSizeMsg:
 		m.list.SetSize(msg.Width, msg.Height-3)

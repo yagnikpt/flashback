@@ -1,6 +1,7 @@
 package contentloaders
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -30,7 +31,7 @@ func formatHead(head *goquery.Selection) string {
 	return strings.Join(lines, "\n\n")
 }
 
-func GetWebPage(target string) (string, error) {
+func GetWebPage(ctx context.Context, target string) (string, error) {
 	target = strings.TrimRight(target, ".,;:!?)")
 	if !strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://") {
 		target = "https://" + target
@@ -43,7 +44,7 @@ func GetWebPage(target string) (string, error) {
 	}
 
 	for {
-		req, err := http.NewRequest("GET", target, nil)
+		req, err := http.NewRequestWithContext(ctx, "GET", target, nil)
 		if err != nil {
 			return "", err
 		}

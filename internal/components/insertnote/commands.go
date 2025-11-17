@@ -1,9 +1,11 @@
 package insertnote
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/yagnikpt/flashback/internal/contentloaders"
@@ -11,24 +13,42 @@ import (
 )
 
 type heightMsg int
-type addNoteMsg bool
+type addNoteMsg struct {
+	success bool
+	err     error
+}
 
 func addNoteCmd(m Model, content string) tea.Cmd {
 	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+		defer cancel()
+
 		var metadata map[string]string
 		var noteType string
 		if strings.HasPrefix(content, "http") {
 			noteType = "link"
-			pageContent, err := contentloaders.GetWebPage(content)
+			pageContent, err := contentloaders.GetWebPage(ctx, content)
 			if err != nil {
-				return addNoteMsg(false)
+				return addNoteMsg{
+					success: false,
+					err:     err,
+				}
 			}
 			pageContentWithUrl := fmt.Sprintf("URL: %s\n\n%s", content, pageContent)
-			metadata, err = m.app.GenerateMetadataForWebNote(pageContentWithUrl)
-		} else {
-			_metadata, err := m.app.GenerateMetadataForSimpleNote(content)
+			metadata, err = m.app.GenerateMetadataForWebNote(ctx, pageContentWithUrl)
 			if err != nil {
-				return addNoteMsg(false)
+				return addNoteMsg{
+					success: false,
+					err:     err,
+				}
+			}
+		} else {
+			_metadata, err := m.app.GenerateMetadataForSimpleNote(ctx, content)
+			if err != nil {
+				return addNoteMsg{
+					success: false,
+					err:     err,
+				}
 			}
 			metadata = _metadata
 			noteType = "text"
@@ -41,15 +61,24 @@ func addNoteCmd(m Model, content string) tea.Cmd {
 			metadataLine := fmt.Sprintf(" %s: %s\n", key, value)
 			finalContent.WriteString(metadataLine)
 		}
-		embeddings, err := m.app.GenerateEmbeddingForNote(finalContent.String(), "RETRIEVAL_DOCUMENT")
+		embeddings, err := m.app.GenerateEmbeddingForNote(ctx, finalContent.String(), "RETRIEVAL_DOCUMENT")
 		if err != nil {
-			return addNoteMsg(false)
+			return addNoteMsg{
+				success: false,
+				err:     err,
+			}
 		}
-		err = m.app.InsertNote(content, noteType, metadata, embeddings)
+		err = m.app.InsertNote(ctx, content, noteType, metadata, embeddings)
 		if err != nil {
-			return addNoteMsg(false)
+			return addNoteMsg{
+				success: false,
+				err:     err,
+			}
 		}
-		return addNoteMsg(true)
+		return addNoteMsg{
+			success: true,
+			err:     nil,
+		}
 	}
 }
 

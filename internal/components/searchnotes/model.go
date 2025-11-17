@@ -92,7 +92,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetItems(items)
 		m.isLoading = false
 		m.showFeedback = true
-		m.textarea.Blur()
+		if len(notes) > 0 {
+			m.textarea.Blur()
+		}
 
 	case relayChooseMsg:
 		note := models.FlashbackWithMetadata(msg)
@@ -101,12 +103,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case dimensionsMsg:
 		dims := dimensionsMsg(msg)
-		m.list.SetHeight(dims.height - 8)
-		m.list.SetWidth(dims.width)
+		m.list.SetSize(dims.width, dims.height-8)
 
 	case tea.WindowSizeMsg:
-		m.list.SetHeight(msg.Height - 8)
-		m.list.SetWidth(msg.Width)
+		m.list.SetSize(msg.Width, msg.Height-8)
 
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -135,7 +135,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.isLoading {
 		newSpinner, cmd := m.spinner.Update(msg)
 		m.spinner = newSpinner.(spinner.Model)
-		// cmds = append(cmds, m.spinner.Init())
 		cmds = append(cmds, cmd)
 	}
 	newTextarea, cmd := m.textarea.Update(msg)

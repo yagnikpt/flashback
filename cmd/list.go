@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/yagnikpt/flashback/internal/app"
@@ -16,7 +18,10 @@ func NewListCmd(app *app.App) *cobra.Command {
 		Long: `List all notes stored in the flashback database.
 This command displays a compact list of all notes with their IDs and Content.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			flashbacks, err := app.GetAllNotes()
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			flashbacks, err := app.GetAllNotes(ctx)
 			if err != nil {
 				fmt.Println("Error retrieving notes:", err)
 				return

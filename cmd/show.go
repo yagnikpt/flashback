@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/yagnikpt/flashback/internal/app"
@@ -21,8 +23,11 @@ Examples:
 			if len(args) == 0 {
 				fmt.Println("Please provide the ID of the note to show.")
 			}
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
 			noteID := args[0]
-			flashback, err := app.GetNoteByID(noteID)
+			flashback, err := app.GetNoteByID(ctx, noteID)
 			if err != nil {
 				fmt.Println("Error retrieving note:", err)
 				return

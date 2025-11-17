@@ -1,8 +1,10 @@
 package searchnotes
 
 import (
+	"context"
 	"log"
 	"os"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/yagnikpt/flashback/internal/models"
@@ -18,8 +20,11 @@ type dimensionsMsg struct {
 
 func searchNotesCmd(m Model, query string) tea.Cmd {
 	return func() tea.Msg {
-		embeddings, _ := m.app.GenerateEmbeddingForNote(query, "RETRIEVAL_QUERY")
-		flashbacks, err := m.app.RetrieveNotesBySimilarity(embeddings)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		embeddings, _ := m.app.GenerateEmbeddingForNote(ctx, query, "RETRIEVAL_QUERY")
+		flashbacks, err := m.app.RetrieveNotesBySimilarity(ctx, embeddings)
 		if err != nil {
 			log.Fatal("Error retrieving notes:", err)
 		}
