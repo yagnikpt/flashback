@@ -4,6 +4,7 @@ Flashback is a command-line knowledge store.
 It captures text, URLs, and commands, extracts structured metadata, and makes everything searchable.
 
 It is designed for developers who want a fast, local, scriptable memory system.
+![Demo GIF](demo.gif)
 
 ---
 
