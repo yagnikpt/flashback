@@ -1,7 +1,7 @@
 *.log
 .env
 *.db
-/flashback
+/flashback*
 dist/
 .cache
 demo.tape

@@ -1,141 +1,117 @@
-# ⚡ Flashback
+# Flashback
 
-A powerful command-line tool that serves as your second memory, intelligently storing and retrieving your notes using AI-powered semantic search. Never lose track of important information again!
+Flashback is a command-line knowledge store.
+It captures text, URLs, and commands, extracts structured metadata, and makes everything searchable.
 
-## Demo
-![Demo GIF](demo.gif)
+It is designed for developers who want a fast, local, scriptable memory system.
 
-## ✨ Features
+---
 
-### 🧠 AI-Powered Note Management
-- **Smart Storage**: Automatically generates embeddings for your notes using Google's Gemini AI
-- **Semantic Search**: Find notes using natural language queries, not just keywords
-- **Intelligent Recall**: Get contextually relevant responses based on your stored notes
-- **Timestamp-Aware**: Automatically tracks when notes were created with human-friendly time formatting
+## Features
 
-### 🎯 Three Modes
-1. **Note Mode**: Quickly capture thoughts, ideas, and information
-    - **URL Mode**: Fetch content from URLs. usage -> `web:https://example.com`
-    - **File Mode**: Use content from files (only text files for now). usage -> `file:/path/to/file.txt`
-    - **Clipboard Mode**: Use content from clipboard. usage -> `#clipboard`
-2. **Recall Mode**: Query your notes using natural language to get intelligent summaries
-3. **Delete Mode**: Browse and manage your existing notes with easy deletion
+* CLI-first workflow (Cobra)
+* Metadata extraction for URLs (OpenGraph, Twitter, JSON-LD)
+* AI enrichment using Google Gemini (strict JSON schema)
+* Local-first storage backed by Turso/libSQL
+* TUI viewer built with Bubbletea
+* Fast search with filters and tags
+* Separate metadata table for incremental enrichment
 
-### 🔒 Privacy & Performance
-- **Local Storage**: All notes stored locally in SQLite database
-- **Fast Retrieval**: Vector similarity search for lightning-fast note matching
-- **Cross-Platform**: Runs on Linux, macOS, and Windows
+---
 
-## 🚀 Installation
+## Usage
 
+```bash
+flashback help
+```
+
+TUI:
+
+```bash
+flashback
+```
+
+Add entries:
+
+```bash
+flashback add kubectl rollout restart deployment web
+flashback add https://blog.bytebytego.com/p/understanding-load-balancers
+```
+
+Search:
+
+```bash
+flashback search load balancer
+flashback search kubernetes
+```
+
+View entries:
+
+```bash
+flashback list
+flashback show <id>
+```
+
+---
+
+## How it works
+
+Flashback processes inputs through a simple pipeline:
+
+1. Detect type (text, URL, code)
+2. Scrape metadata (OpenGraph, JSON-LD, fallbacks)
+3. Run Gemini enrichment (tags, summary, normalization)
+4. Store in SQLite/Turso with structured metadata
+
+All AI output is enforced via JSON schema to ensure deterministic results.
+
+---
+
+## Data model
+
+Each record is stored in the `flashbacks` table.
+Metadata is stored separately in the `metadata` table as key/value pairs.
+This allows multiple enrichment passes and avoids schema churn.
+
+Example metadata fields:
+
+```
+tldr
+description
+tags (JSON array)
+image (url)
+```
+
+---
+
+## Configuration
+
+Location: `~/.config/flashback/config.yaml`
+
+---
+
+## Install
 ### Prerequisites
 - Go 1.24.4 or later
 - Google AI API key (for Gemini embeddings)
 
-### Option 1: Build from Source (linux and mac)
-```bash
-# Clone the repository
-git clone https://github.com/yagnikpt/flashback.git
-cd flashback
+### From source:
 
-# Build the application and moves it to /usr/local/bin
+```bash
+git clone https://github.com/yagnikpt/flashback
+cd flashback
 make install
-
-# Run the application
-flashback
 ```
 
-### Option 2: Direct Go Install
+### Direct Go Install
 ```bash
-# Install directly from source
-go install github.com/yagnikpt/flashback/cmd/flashback@latest
-
-# Run the application
-flashback
+go install github.com/yagnikpt/flashback@latest
 ```
 
-### Option 3: Development Setup
-```bash
-# Clone and run in development mode
-git clone https://github.com/yagnikpt/flashback.git
-cd flashback
+---
 
-# Install dependencies
-make tidy
+## Roadmap
 
-# Run without building
-make run
-```
-
-### Notification Daemon Setup
-This feature is optional and will allow you to receive notifications based on your notes. For better experience, set it up as a background service.
-```bash
-# start daemon
-flashback notifications
-```
-
-## ⚙️ Configuration
-
-### Setting up Google AI API
-1. Get your API key from [Google AI Studio](https://aistudio.google.com/apikey)
-2. Set the API key in the initial screen of the application.
-
-## 🎮 Usage
-
-### Basic Navigation
-- **Alt+?**: Toggle keys helper visibility.
-
-## 🛠️ Development
-
-### Project Structure
-```
-flashback/
-├── cmd/flashback/         # Main application entry point
-├── internal/
-│   ├── app/               # Core application logic and TUI models
-│   ├── components/        # Reusable UI components
-│   ├── migration/         # Database migrations
-│   ├── notes/             # Notes business logic and AI integration
-│   ├── notifications/     # Notification daemon logic
-│   ├── contentloaders/    # Logic to get data from web and other sources
-│   └── config/            # Config save and load helpers
-├── Makefile               # Build and development commands
-└── README.md
-```
-
-### Key Technologies
-- **[Bubble Tea](https://github.com/charmbracelet/bubbletea)**: Modern TUI framework
-- **[Turso](https://github.com/tursodatabase/turso-go)**: SQLite-compatible database
-- **[Google Generative AI](https://github.com/googleapis/go-genai)**: Embeddings and text generation
-- **[Goose](https://github.com/pressly/goose)**: Database migrations
-
-### Available Make Commands
-```bash
-make build    # Build the binary
-make run      # Run in development mode
-make tidy     # Clean up dependencies
-make install  # Build and install to /usr/local/bin
-```
-
-## 🔮 Future Features
-
-### 🌐 Web Content Integration [✅ Rough Implementation]
-- **Content Scraping**: Extract information directly from web pages to load context into notes
-- **URL Processing**: Automatically detect URLs and generate summaries
-
-### 📁 Attach Local Files [❌ Just txt files for now]
-- **File Parsing**: Import and extract information from local files (PDF, TXT, DOCX, etc.)
-- **Directory Indexing**: Recursively scan directories to build a knowledge base from your files
-
-### ⏰ Smart Notifications [✅ Done]
-- **Time & Date Extraction**: Automatically identify dates and times mentioned in your notes
-- **Notification System**: Run as a daemon to alert you about upcoming events extracted from notes
-- **Custom Reminders**: Set specific notification preferences for different types of information
-
-### Development Environment
-
-#### Required Tools
-- Go 1.24.4+
-- Git
-- Your favorite terminal
-- Text editor with Go support
+* More site-specific extractors (GitHub, YouTube, Reddit, Medium)
+* Configurable metadata schema
+* Plugin system for custom enrichers

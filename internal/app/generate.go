@@ -124,14 +124,14 @@ func (app *App) GenerateMetadataForWebNote(content string) (map[string]string, e
 	}
 
 	image, ok := res["image"]
-	if ok {
+	imageMain, imageMainOk := res["image_main"]
+	if ok && imageMainOk && imageMain == "true" {
 		imageMetadata, err := app.GenerateMetadataForImage(image)
 		if err != nil {
 			return nil, fmt.Errorf("%w", err)
 		}
-		priorityImage, imageMainOk := res["image_main"]
 		for k, v := range imageMetadata {
-			if k == "tags" && imageMainOk && priorityImage == "true" {
+			if k == "tags" {
 				if existingTags, exists := res["tags"]; exists && existingTags != "" {
 					var imageTags []string
 					var webPageTags []string
@@ -150,16 +150,6 @@ func (app *App) GenerateMetadataForWebNote(content string) (map[string]string, e
 						return nil, fmt.Errorf("error marshaling combined tags: %w", err)
 					}
 					res["tags"] = string(combinedTagsJson)
-					continue
-				}
-			} else {
-				continue
-			}
-			if k == "tldr" {
-				if existingTldr, exists := res["tldr"]; exists && existingTldr != "" {
-					if imageMainOk && priorityImage == "true" {
-						res["tldr"] = v
-					}
 					continue
 				}
 			}

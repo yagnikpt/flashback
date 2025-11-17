@@ -1,7 +1,6 @@
 package searchnotes
 
 import (
-	"log"
 	"strings"
 	"time"
 
@@ -80,7 +79,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case searchResultsMsg:
-		log.Println("searchMsg")
 		notes := []models.FlashbackWithMetadata(msg)
 		items := make([]list.Item, len(notes))
 		for i := range items {
@@ -97,19 +95,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.textarea.Blur()
 
 	case relayChooseMsg:
-		log.Println("chooseMsg")
 		note := models.FlashbackWithMetadata(msg)
 		m.activeNote = note
 		m.showingNote = true
 
 	case dimensionsMsg:
-		log.Println("dimensionsMsg")
 		dims := dimensionsMsg(msg)
 		m.list.SetHeight(dims.height - 8)
 		m.list.SetWidth(dims.width)
 
 	case tea.WindowSizeMsg:
-		log.Println("windowMsg")
 		m.list.SetHeight(msg.Height - 8)
 		m.list.SetWidth(msg.Width)
 
@@ -158,7 +153,6 @@ var (
 )
 
 func (m Model) View() string {
-	log.Println("paint")
 	var builder strings.Builder
 	if m.showingNote {
 		return docStyles(utils.FormatSingleNote(m.activeNote))
