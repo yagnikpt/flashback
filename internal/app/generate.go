@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/yagnikpt/flashback/internal/utils"
@@ -138,6 +139,7 @@ func (app *App) GenerateMetadataForWebNote(ctx context.Context, content string) 
 				Details: errs.Details,
 			}
 		}
+		log.Println(imageMetadata)
 		for k, v := range imageMetadata {
 			if k == "tags" {
 				if existingTags, exists := res["tags"]; exists && existingTags != "" {
@@ -152,6 +154,7 @@ func (app *App) GenerateMetadataForWebNote(ctx context.Context, content string) 
 						return nil, fmt.Errorf("error unmarshaling webpage tags: %w", err)
 					}
 					combinedTags := append(webPageTags, imageTags...)
+					log.Println(combinedTags)
 					combinedTags = utils.UniqueStrings(combinedTags)
 					combinedTagsJson, err := json.Marshal(combinedTags)
 					if err != nil {

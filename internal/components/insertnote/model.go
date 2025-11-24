@@ -17,6 +17,7 @@ type Model struct {
 	showFeedback bool
 	feedbackMsg  string
 	isLoading    bool
+	statusChan   chan string
 }
 
 func (m *Model) ResetView() {
@@ -27,7 +28,8 @@ func (m *Model) ResetView() {
 
 func NewModel(app *app.App) Model {
 	t := textarea.NewModel()
-	s := spinner.NewModel(nil)
+	statusChan := make(chan string)
+	s := spinner.NewModel(statusChan)
 	s.SetDisplayText("Creating the note...")
 
 	return Model{
@@ -37,6 +39,7 @@ func NewModel(app *app.App) Model {
 		showFeedback: false,
 		feedbackMsg:  "",
 		isLoading:    false,
+		statusChan:   statusChan,
 	}
 }
 

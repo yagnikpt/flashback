@@ -26,6 +26,7 @@ func addNoteCmd(m Model, content string) tea.Cmd {
 		var metadata map[string]string
 		var noteType string
 		if strings.HasPrefix(content, "http") {
+			m.statusChan <- "Fetching webpage content..."
 			noteType = "link"
 			pageContent, err := contentloaders.GetWebPage(ctx, content)
 			if err != nil {
@@ -35,6 +36,7 @@ func addNoteCmd(m Model, content string) tea.Cmd {
 				}
 			}
 			pageContentWithUrl := fmt.Sprintf("URL: %s\n\n%s", content, pageContent)
+			m.statusChan <- "Generating metadata for webpage..."
 			metadata, err = m.app.GenerateMetadataForWebNote(ctx, pageContentWithUrl)
 			if err != nil {
 				return addNoteMsg{
@@ -43,6 +45,7 @@ func addNoteCmd(m Model, content string) tea.Cmd {
 				}
 			}
 		} else {
+			m.statusChan <- "Generating metadata for note..."
 			_metadata, err := m.app.GenerateMetadataForSimpleNote(ctx, content)
 			if err != nil {
 				return addNoteMsg{
@@ -61,6 +64,7 @@ func addNoteCmd(m Model, content string) tea.Cmd {
 			metadataLine := fmt.Sprintf(" %s: %s\n", key, value)
 			finalContent.WriteString(metadataLine)
 		}
+		m.statusChan <- "Saving the note..."
 		embeddings, err := m.app.GenerateEmbeddingForNote(ctx, finalContent.String(), "RETRIEVAL_DOCUMENT")
 		if err != nil {
 			return addNoteMsg{

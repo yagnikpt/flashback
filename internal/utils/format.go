@@ -51,7 +51,8 @@ func FormatSingleNote(note models.FlashbackWithMetadata) string {
 			jsonValue := strings.ReplaceAll(value, `'`, `"`)
 			err = json.Unmarshal([]byte(jsonValue), &tags)
 			if err != nil {
-				log.Println(err)
+				log.Println(err, value)
+				result += "  " + keyStyles.Render(key) + ": " + value + "\n"
 				continue
 			}
 			value = stringJoin(tags, ", ")

@@ -28,7 +28,7 @@ Extraction rules:
 - image → Prefer og:image, twitter:image, or main article image. Try to pick a url which doesn't work on any authentication (like token sessions) if possible.
 - image_main → "true" if the image is the main focus of the page (eg. image gallery, visuals portfolio, product page, pintrest, reddit). Omit when the image is there to support the main subject of the page. You can also guess based on page url.
 - tldr → Short one-sentence context about the page or image.
-- tags → Array of strings in format []. Extract from <meta> or keywords if present. Related to page not to page content. You can also infer from the platform, eg 'Github', 'Pinterest', 'Post', 'Profile' etc.
+- tags → Array of strings in format [] (Always). Extract from <meta> or keywords if present. Related to page not to page content. You can also infer from the platform, eg 'Github', 'Pinterest', 'Post', 'Profile' etc.
 - description → From <meta name="description">, og:description, or short intro text.
 
 Return JSON according to schema.
@@ -45,7 +45,7 @@ If a field cannot be inferred from the image, omit it completely. Never guess or
 
 Extraction rules:
 - tldr → Provide a short, one-sentence summary or context of the image.
-- tags → Array of strings in format []. Provide a concise array of relevant tags or concepts about the image.
+- tags → Array of strings in format [] (Always). Provide a concise array of relevant tags or concepts about the image.
 
 Guidelines:
 - Focus on what is visible — objects, scenes, people, text, or context.

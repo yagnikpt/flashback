@@ -111,13 +111,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc":
-			if !m.textarea.Focused() {
-				m.textarea.Focus()
-				m.showFeedback = false
-			}
 			if m.showingNote {
 				m.showingNote = false
 				m.activeNote = models.FlashbackWithMetadata{}
+			} else if m.showFeedback {
+				m.textarea.SetValue("")
+				m.textarea.Focus()
+				m.showFeedback = false
 			}
 			return m, nil
 		case "enter":
@@ -126,7 +126,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.showFeedback = false
 				m.isLoading = true
 				cmds = append(cmds, searchNotesCmd(m, query))
-				m.textarea.SetValue("")
 				cmds = append(cmds, m.spinner.Init())
 			}
 		}
