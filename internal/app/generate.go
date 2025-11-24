@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/yagnikpt/flashback/internal/utils"
@@ -52,7 +51,7 @@ func (app *App) GenerateMetadataForSimpleNote(ctx context.Context, content strin
 
 	result, err := app.Gemini.Models.GenerateContent(
 		ctx,
-		"gemini-2.0-flash",
+		"gemini-2.5-flash",
 		genai.Text(content),
 		config,
 	)
@@ -94,7 +93,7 @@ func (app *App) GenerateMetadataForWebNote(ctx context.Context, content string) 
 				},
 				"tags": map[string]any{
 					"type":        "string",
-					"description": "Tags, topics, or keywords related to the page in string of array with [] format.",
+					"description": `Tags, topics, or keywords related to the page in string of array.`,
 				},
 			},
 			"additionalProperties": false,
@@ -103,7 +102,7 @@ func (app *App) GenerateMetadataForWebNote(ctx context.Context, content string) 
 
 	result, err := app.Gemini.Models.GenerateContent(
 		ctx,
-		"gemini-2.0-flash",
+		"gemini-2.5-flash",
 		genai.Text(content),
 		config,
 	)
@@ -139,7 +138,6 @@ func (app *App) GenerateMetadataForWebNote(ctx context.Context, content string) 
 				Details: errs.Details,
 			}
 		}
-		log.Println(imageMetadata)
 		for k, v := range imageMetadata {
 			if k == "tags" {
 				if existingTags, exists := res["tags"]; exists && existingTags != "" {
@@ -154,7 +152,6 @@ func (app *App) GenerateMetadataForWebNote(ctx context.Context, content string) 
 						return nil, fmt.Errorf("error unmarshaling webpage tags: %w", err)
 					}
 					combinedTags := append(webPageTags, imageTags...)
-					log.Println(combinedTags)
 					combinedTags = utils.UniqueStrings(combinedTags)
 					combinedTagsJson, err := json.Marshal(combinedTags)
 					if err != nil {
@@ -194,7 +191,7 @@ func (app *App) GenerateMetadataForImage(ctx context.Context, imageUrl string) (
 				},
 				"tags": map[string]any{
 					"type":        "string",
-					"description": "Tags, topics, or keywords related to the image in string of array with [] format.",
+					"description": `Tags, topics, or keywords related to the image in string of array.`,
 				},
 			},
 			"additionalProperties": false,
@@ -204,7 +201,7 @@ func (app *App) GenerateMetadataForImage(ctx context.Context, imageUrl string) (
 		{InlineData: &genai.Blob{Data: data, MIMEType: "image/jpeg"}},
 	}
 	contents := []*genai.Content{{Parts: parts}}
-	result, err := app.Gemini.Models.GenerateContent(ctx, "gemini-2.0-flash", contents, config)
+	result, err := app.Gemini.Models.GenerateContent(ctx, "gemini-2.5-flash", contents, config)
 	if err != nil {
 		return nil, err
 	}
