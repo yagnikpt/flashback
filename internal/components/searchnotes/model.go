@@ -115,7 +115,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.showingNote = false
 				m.activeNote = models.FlashbackWithMetadata{}
 			} else if m.showFeedback {
-				m.textarea.SetValue("")
 				m.textarea.Focus()
 				m.showFeedback = false
 			}
@@ -139,7 +138,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	newTextarea, cmd := m.textarea.Update(msg)
 	m.textarea = newTextarea.(textarea.Model)
 	cmds = append(cmds, cmd)
-	if m.showFeedback {
+	if m.showFeedback && !m.textarea.Focused() {
 		m.list, cmd = m.list.Update(msg)
 		cmds = append(cmds, cmd)
 	}

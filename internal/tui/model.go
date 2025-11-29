@@ -50,9 +50,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "esc":
-			// return m, nil
-		case "q", "ctrl+c":
+		case "ctrl+c":
 			return m, tea.Quit
 		case "tab":
 			m.active = (m.active + 1) % 3
