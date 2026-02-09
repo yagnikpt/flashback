@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "github.com/tursodatabase/turso-go"
+	_ "turso.tech/database/tursogo"
 
 	"github.com/yagnikpt/flashback/cmd"
 	"github.com/yagnikpt/flashback/internal/app"

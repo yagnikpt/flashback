@@ -14,9 +14,9 @@ require (
 	github.com/muesli/reflow v0.3.0
 	github.com/pressly/goose/v3 v3.26.0
 	github.com/spf13/cobra v1.10.1
-	github.com/tursodatabase/turso-go v0.2.2
 	golang.org/x/term v0.37.0
 	google.golang.org/genai v1.34.0
+	turso.tech/database/tursogo v0.4.4
 )
 
 require (
@@ -61,6 +61,7 @@ require (
 	github.com/sahilm/fuzzy v0.1.1 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
+	github.com/tursodatabase/turso-go-platform-libs v0.4.4 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
