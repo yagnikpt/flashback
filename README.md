@@ -92,9 +92,11 @@ Location: `~/.config/flashback/config.yaml`
 ---
 
 ## Install
-### Prerequisites
-- Go 1.24.4 or later
-- Google AI API key (for Gemini embeddings)
+### Using Homebrew
+
+```bash
+brew install yagnikpt/tap/flashback
+```
 
 ### From source:
 
