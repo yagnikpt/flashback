@@ -23,19 +23,30 @@ var ignoreList = map[string]bool{
 }
 
 func FormatSingleNote(note models.FlashbackWithMetadata) string {
+	return formatSingleNote(note, false)
+}
+
+func FormatSingleNoteForTUI(note models.FlashbackWithMetadata) string {
+	return formatSingleNote(note, true)
+}
+
+func formatSingleNote(note models.FlashbackWithMetadata, wrapURLs bool) string {
 	width, _, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
 		panic(err)
 	}
 
 	result := keyStyles.Render("\nID: ") + note.ID + "\n" + keyStyles.Render("Content: ")
-
-	if note.Type != "url" {
-		result += "\n"
-		content := wordwrap.String(note.Content, width-4)
-		result += content
-	} else {
+	if !wrapURLs && note.Type == "url" {
 		result += note.Content
+	} else {
+		contentWidth := width - len("Content: ") - 4
+		if contentWidth < 20 {
+			contentWidth = 20
+		}
+		content := wordwrap.String(note.Content, contentWidth)
+		content = strings.ReplaceAll(content, "\n", "\n"+strings.Repeat(" ", len("Content: ")))
+		result += content
 	}
 
 	result += "\n\nMetadata:\n"
@@ -57,15 +68,20 @@ func FormatSingleNote(note models.FlashbackWithMetadata) string {
 			}
 			value = stringJoin(tags, ", ")
 		}
-		if key == "image" {
+
+		if !wrapURLs && key == "image" {
 			result += "  " + keyStyles.Render(key) + ": " + value + "\n"
 			continue
 		}
-		value = wordwrap.String(value, width-len(key)-8)
+
+		valueWidth := width - len(key) - 8
+		if valueWidth < 20 {
+			valueWidth = 20
+		}
+		value = wordwrap.String(value, valueWidth)
 		value = strings.ReplaceAll(value, "\n", "\n"+strings.Repeat(" ", 4+len(key)))
 		result += "  " + keyStyles.Render(key) + ": " + value + "\n"
 	}
-	// result = wordwrap.String(result, width)
 	return result
 }
 
@@ -95,12 +111,29 @@ func FormatMultipleNotesCompact(notes []models.FlashbackWithMetadata) string {
 		panic(err)
 	}
 
-	header := "ID" + strings.Repeat(" ", 24) + "Content\n\n"
+	const idColWidth = 24
+	const colGap = "  "
+	indent := strings.Repeat(" ", idColWidth+len(colGap))
+
+	header := "ID" + strings.Repeat(" ", idColWidth-len("ID")) + colGap + "Content\n\n"
 	result := header
 	for _, note := range notes {
-		wrappedContent := wordwrap.String(note.Content, width-26)
-		indentedContent := strings.ReplaceAll(wrappedContent, "\n", "\n"+strings.Repeat(" ", 26))
-		result += keyStyles.Render(note.ID) + "    " + indentedContent + "\n\n"
+		content := note.Content
+		isURL := note.Type == "url" || strings.HasPrefix(note.Content, "http://") || strings.HasPrefix(note.Content, "https://")
+		if !isURL {
+			wrapWidth := width - (idColWidth + len(colGap))
+			if wrapWidth < 20 {
+				wrapWidth = 20
+			}
+			wrapped := wordwrap.String(content, wrapWidth)
+			content = strings.ReplaceAll(wrapped, "\n", "\n"+indent)
+		}
+
+		idPadding := idColWidth - len(note.ID)
+		if idPadding < 1 {
+			idPadding = 1
+		}
+		result += keyStyles.Render(note.ID) + strings.Repeat(" ", idPadding) + colGap + content + "\n\n"
 	}
 	return result
 }

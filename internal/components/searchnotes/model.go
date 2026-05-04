@@ -152,7 +152,7 @@ var (
 func (m Model) View() string {
 	var builder strings.Builder
 	if m.showingNote {
-		return docStyles(utils.FormatSingleNote(m.activeNote))
+		return docStyles(utils.FormatSingleNoteForTUI(m.activeNote))
 	}
 	if m.isLoading {
 		builder.WriteString(m.spinner.View())

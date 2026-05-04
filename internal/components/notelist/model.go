@@ -105,7 +105,7 @@ var docStyles = lipgloss.NewStyle().Margin(0, 2).Render
 
 func (m Model) View() string {
 	if m.showingNote {
-		return docStyles(utils.FormatSingleNote(m.activeNote))
+		return docStyles(utils.FormatSingleNoteForTUI(m.activeNote))
 	}
 	return m.list.View()
 }
