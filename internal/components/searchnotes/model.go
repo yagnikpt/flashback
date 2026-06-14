@@ -4,9 +4,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/list"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/dustin/go-humanize"
 	"github.com/yagnikpt/flashback/internal/app"
 	"github.com/yagnikpt/flashback/internal/components/spinner"
@@ -108,7 +108,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.list.SetSize(msg.Width, msg.Height-8)
 
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "esc":
 			if m.showingNote {
@@ -149,18 +149,18 @@ var (
 	docStyles = lipgloss.NewStyle().Margin(1, 1).Render
 )
 
-func (m Model) View() string {
+func (m Model) View() tea.View {
 	var builder strings.Builder
 	if m.showingNote {
-		return docStyles(utils.FormatSingleNoteForTUI(m.activeNote))
+		return tea.NewView(docStyles(utils.FormatSingleNoteForTUI(m.activeNote)))
 	}
 	if m.isLoading {
-		builder.WriteString(m.spinner.View())
+		builder.WriteString(m.spinner.View().Content)
 	} else {
-		builder.WriteString(m.textarea.View())
+		builder.WriteString(m.textarea.View().Content)
 	}
 	if m.showFeedback {
 		builder.WriteString("\n\n" + m.list.View())
 	}
-	return docStyles(builder.String())
+	return tea.NewView(docStyles(builder.String()))
 }

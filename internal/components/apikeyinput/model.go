@@ -3,8 +3,8 @@ package apikeyinput
 import (
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/yagnikpt/flashback/internal/components/textarea"
 )
 
@@ -32,7 +32,7 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
 			return m, tea.Quit
@@ -52,8 +52,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m Model) View() string {
+func (m Model) View() tea.View {
 	var tui strings.Builder
-	tui.WriteString("\n" + m.textarea.View() + "\n\n" + "Get your Gemini API key from https://aistudio.google.com/api-keys")
-	return tui.String()
+	tui.WriteString("\n" + m.textarea.View().Content + "\n\n" + "Get your Gemini API key from https://aistudio.google.com/api-keys")
+	return tea.NewView(tui.String())
 }

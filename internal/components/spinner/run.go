@@ -4,16 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 func Run(status <-chan string, altScreen bool) {
-	var options []tea.ProgramOption
-	if altScreen {
-		options = append(options, tea.WithAltScreen())
-	}
 	model := NewModel(status)
-	p := tea.NewProgram(model, options...)
+	model.SetAltScreen(altScreen)
+	p := tea.NewProgram(model)
 	res, err := p.Run()
 	if err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)

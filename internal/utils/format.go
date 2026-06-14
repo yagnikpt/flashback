@@ -8,7 +8,7 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/yagnikpt/flashback/internal/models"
 )

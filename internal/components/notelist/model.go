@@ -3,9 +3,9 @@ package notelist
 import (
 	"time"
 
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/list"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/dustin/go-humanize"
 	"github.com/yagnikpt/flashback/internal/app"
 	"github.com/yagnikpt/flashback/internal/models"
@@ -84,7 +84,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.list.SetSize(msg.Width, msg.Height-3)
 
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "esc":
 			if m.showingNote {
@@ -103,9 +103,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 var docStyles = lipgloss.NewStyle().Margin(0, 2).Render
 
-func (m Model) View() string {
+func (m Model) View() tea.View {
 	if m.showingNote {
-		return docStyles(utils.FormatSingleNoteForTUI(m.activeNote))
+		return tea.NewView(docStyles(utils.FormatSingleNoteForTUI(m.activeNote)))
 	}
-	return m.list.View()
+	return tea.NewView(m.list.View())
 }

@@ -16,7 +16,7 @@ func (app *App) GenerateEmbeddingForNote(ctx context.Context, content, taskType 
 		genai.NewContentFromText(content, genai.RoleUser),
 	}
 	result, err := app.Gemini.Models.EmbedContent(ctx,
-		"gemini-embedding-001",
+		"gemini-embedding-2",
 		contents,
 		&genai.EmbedContentConfig{
 			TaskType:             taskType,
@@ -51,7 +51,7 @@ func (app *App) GenerateMetadataForSimpleNote(ctx context.Context, content strin
 
 	result, err := app.Gemini.Models.GenerateContent(
 		ctx,
-		"gemini-2.5-flash",
+		"gemini-flash-latest",
 		genai.Text(content),
 		config,
 	)
@@ -102,7 +102,7 @@ func (app *App) GenerateMetadataForWebNote(ctx context.Context, content string) 
 
 	result, err := app.Gemini.Models.GenerateContent(
 		ctx,
-		"gemini-2.5-flash",
+		"gemini-flash-latest",
 		genai.Text(content),
 		config,
 	)
@@ -201,7 +201,7 @@ func (app *App) GenerateMetadataForImage(ctx context.Context, imageUrl string) (
 		{InlineData: &genai.Blob{Data: data, MIMEType: "image/jpeg"}},
 	}
 	contents := []*genai.Content{{Parts: parts}}
-	result, err := app.Gemini.Models.GenerateContent(ctx, "gemini-2.5-flash", contents, config)
+	result, err := app.Gemini.Models.GenerateContent(ctx, "gemini-flash-latest", contents, config)
 	if err != nil {
 		return nil, err
 	}

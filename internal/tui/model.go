@@ -3,8 +3,8 @@ package tui
 import (
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/yagnikpt/flashback/internal/app"
 	"github.com/yagnikpt/flashback/internal/components/insertnote"
 	"github.com/yagnikpt/flashback/internal/components/notelist"
@@ -38,7 +38,7 @@ func NewModel(app *app.App) Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(m.notelist.Init(), tea.SetWindowTitle("flashback"))
+	return m.notelist.Init()
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -48,12 +48,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	)
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "tab":
 			m.active = (m.active + 1) % 3
+			switch m.active {
+			case screenListNotes:
+				cmd = m.notelist.Init()
+				m.notelist.ResetView()
+			case screenInsertNote:
+				cmd = m.insertnote.Init()
+				m.insertnote.ResetView()
+			case screenSearchNotes:
+				cmd = m.searchnotes.Init()
+				m.searchnotes.ResetView()
+			}
+			return m, cmd
+		case "shift+tab":
+			m.active = ((m.active-1)%3 + 3) % 3
 			switch m.active {
 			case screenListNotes:
 				cmd = m.notelist.Init()
@@ -89,10 +103,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 var (
 	tabStyles       = lipgloss.NewStyle().Padding(0, 1).Margin(0, 1).Render
-	activeTabStyles = lipgloss.NewStyle().Padding(0, 1).Margin(0, 1).Background(lipgloss.Color("#5A696C")).Foreground(lipgloss.Color("#ffffff")).Bold(true).Render
+	activeTabStyles = lipgloss.NewStyle().Padding(0, 1).Margin(0, 1).Background(lipgloss.Blue).Foreground(lipgloss.White).Bold(true).Render
 )
 
-func (m Model) View() string {
+func (m Model) View() tea.View {
 	views := []string{"Manage Notes", "Add Note", "Search Notes"}
 	var builder strings.Builder
 	for i, v := range views {
@@ -105,11 +119,15 @@ func (m Model) View() string {
 	builder.WriteString("\n\n")
 	switch m.active {
 	case screenListNotes:
-		builder.WriteString(m.notelist.View())
+		builder.WriteString(m.notelist.View().Content)
 	case screenInsertNote:
-		builder.WriteString(m.insertnote.View())
+		builder.WriteString(m.insertnote.View().Content)
 	case screenSearchNotes:
-		builder.WriteString(m.searchnotes.View())
+		builder.WriteString(m.searchnotes.View().Content)
 	}
-	return builder.String()
+
+	v := tea.NewView(builder.String())
+	v.AltScreen = true
+	v.WindowTitle = "flashback"
+	return v
 }

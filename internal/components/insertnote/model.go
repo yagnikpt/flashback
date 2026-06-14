@@ -3,8 +3,8 @@ package insertnote
 import (
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/yagnikpt/flashback/internal/app"
 	"github.com/yagnikpt/flashback/internal/components/spinner"
 	"github.com/yagnikpt/flashback/internal/components/textarea"
@@ -77,7 +77,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			height = int(75.0*float32(height)) / 100
 			m.textarea.SetHeight(height - 4)
 		}
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "enter":
 			m.showFeedback = false
@@ -106,15 +106,15 @@ var (
 	docStyles = lipgloss.NewStyle().Margin(1, 1).Render
 )
 
-func (m Model) View() string {
+func (m Model) View() tea.View {
 	var builder strings.Builder
 	if m.isLoading {
-		builder.WriteString(m.spinner.View())
+		builder.WriteString(m.spinner.View().Content)
 	} else {
-		builder.WriteString(m.textarea.View())
+		builder.WriteString(m.textarea.View().Content)
 	}
 	if m.showFeedback {
 		builder.WriteString("\n\n" + m.feedbackMsg)
 	}
-	return docStyles(builder.String())
+	return tea.NewView(docStyles(builder.String()))
 }

@@ -1,16 +1,16 @@
 package notelist
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/list"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 func newDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 	d := list.NewDefaultDelegate()
 
-	c := lipgloss.Color("#94a3b8")
+	c := lipgloss.Color("4")
 	d.Styles.SelectedTitle = d.Styles.SelectedTitle.Foreground(c).Border(lipgloss.ThickBorder(), false, false, false, true).BorderLeftForeground(c)
 	d.Styles.SelectedDesc = d.Styles.SelectedTitle
 
@@ -24,7 +24,7 @@ func newDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 		}
 
 		switch msg := msg.(type) {
-		case tea.KeyMsg:
+		case tea.KeyPressMsg:
 			switch {
 			case key.Matches(msg, keys.choose):
 				return relayChooseCmd(id)

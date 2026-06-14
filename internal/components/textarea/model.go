@@ -1,10 +1,10 @@
 package textarea
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/textarea"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/textarea"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 const (
@@ -45,8 +45,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m Model) View() string {
-	return m.textarea.View()
+func (m Model) View() tea.View {
+	return tea.NewView(m.textarea.View())
 }
 
 func (m Model) Value() string {
@@ -79,22 +79,25 @@ func (m Model) Focused() bool {
 
 func NewModel() Model {
 	model := textarea.New()
+	model.KeyMap.InsertNewline = key.NewBinding(
+		key.WithKeys("shift+enter"),
+		key.WithHelp("shift+enter", "newline"),
+	)
 	model.Placeholder = "Enter the note..."
 
 	model.Focus()
 
 	model.Prompt = "┃ "
 	model.CharLimit = defaultCharLimit
-	model.FocusedStyle.Prompt = lipgloss.NewStyle().Foreground(lipgloss.Color("#94a3b8"))
-	model.BlurredStyle.Prompt = lipgloss.NewStyle().Foreground(lipgloss.Color("#525252"))
+
+	styles := model.Styles()
+	styles.Focused.Prompt = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
+	styles.Blurred.Prompt = lipgloss.NewStyle().Foreground(lipgloss.Color("#525252"))
+	styles.Focused.CursorLine = lipgloss.NewStyle()
+	model.SetStyles(styles)
 
 	model.SetHeight(defaultHeight)
-	model.KeyMap.InsertNewline = key.NewBinding(
-		key.WithKeys("ctrl+enter"),
-		key.WithHelp("ctrl+enter", "insert newline"),
-	)
 
-	model.FocusedStyle.CursorLine = lipgloss.NewStyle()
 	model.ShowLineNumbers = false
 
 	return Model{

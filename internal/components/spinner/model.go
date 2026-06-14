@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
 	"github.com/muesli/reflow/wordwrap"
 )
 
@@ -14,6 +14,7 @@ type Model struct {
 	displayText string
 	width       int
 	status      <-chan string
+	altScreen   bool
 }
 
 func (m Model) Init() tea.Cmd {
@@ -37,7 +38,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, getCurrentStatus(m))
 	case closedMsg:
 		return m, tea.Quit
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
@@ -50,14 +51,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Model) View() string {
+func (m Model) View() tea.View {
 	if m.displayText != "" {
 		label := wordwrap.String(m.displayText, m.width-6)
 		label = strings.ReplaceAll(label, "\n", "\n  ")
 		str := fmt.Sprintf("\n%s %s\n", m.spinner.View(), label)
-		return str
+		v := tea.NewView(str)
+		v.AltScreen = m.altScreen
+		return v
 	}
-	return m.spinner.View() + "\n"
+	v := tea.NewView(m.spinner.View() + "\n")
+	v.AltScreen = m.altScreen
+	return v
 }
 
 func (m *Model) SetDisplayText(text string) {
@@ -66,6 +71,10 @@ func (m *Model) SetDisplayText(text string) {
 
 func (m *Model) SetWidth(width int) {
 	m.width = width
+}
+
+func (m *Model) SetAltScreen(altScreen bool) {
+	m.altScreen = altScreen
 }
 
 func NewModel(status <-chan string) Model {
@@ -77,5 +86,6 @@ func NewModel(status <-chan string) Model {
 		displayText: "",
 		width:       0,
 		status:      status,
+		altScreen:   false,
 	}
 }
