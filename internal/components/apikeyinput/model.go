@@ -3,31 +3,30 @@ package apikeyinput
 import (
 	"strings"
 
+	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
-	"github.com/yagnikpt/flashback/internal/components/textarea"
 )
 
-var mainViewStyles = lipgloss.NewStyle().Margin(1, 2)
-
 type Model struct {
-	textarea textarea.Model
-	Output   string
+	input  textinput.Model
+	Output string
 }
 
 func NewModel() Model {
-	textarea := textarea.NewModel()
-	textarea.SetPlaceholder("Enter your Gemini API key...")
-	textarea.SetHeight(1)
+	input := textinput.New()
+	input.SetWidth(50)
+	input.Placeholder = "Enter your Gemini API key"
+	input.EchoMode = textinput.EchoPassword
+	input.Focus()
 
 	return Model{
-		textarea: textarea,
-		Output:   "",
+		input:  input,
+		Output: "",
 	}
 }
 
 func (m Model) Init() tea.Cmd {
-	return m.textarea.Init()
+	return textinput.Blink
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -37,23 +36,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "esc":
 			return m, tea.Quit
 		case "enter":
-			if m.textarea.Value() != "" {
-				m.Output = m.textarea.Value()
+			if m.input.Value() != "" {
+				m.Output = m.input.Value()
 				return m, tea.Quit
 			}
 		}
 	}
 
 	var cmd tea.Cmd
-	var newTextarea tea.Model
-	newTextarea, cmd = m.textarea.Update(msg)
-	m.textarea = newTextarea.(textarea.Model)
+	m.input, cmd = m.input.Update(msg)
 
 	return m, cmd
 }
 
 func (m Model) View() tea.View {
 	var tui strings.Builder
-	tui.WriteString("\n" + m.textarea.View().Content + "\n\n" + "Get your Gemini API key from https://aistudio.google.com/api-keys")
+	tui.WriteString("\n")
+	tui.WriteString(m.input.View())
+	tui.WriteString("\n\n")
+	tui.WriteString("Get your Gemini API key from https://aistudio.google.com/api-keys")
+	tui.WriteString("\n\n")
 	return tea.NewView(tui.String())
 }

@@ -6,7 +6,7 @@ import (
 
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
-	"github.com/muesli/reflow/wordwrap"
+	"charm.land/lipgloss/v2"
 )
 
 type Model struct {
@@ -53,7 +53,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() tea.View {
 	if m.displayText != "" {
-		label := wordwrap.String(m.displayText, m.width-6)
+		label := lipgloss.Wrap(m.displayText, m.width-6, " ")
 		label = strings.ReplaceAll(label, "\n", "\n  ")
 		str := fmt.Sprintf("\n%s %s\n", m.spinner.View(), label)
 		v := tea.NewView(str)

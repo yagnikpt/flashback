@@ -60,6 +60,10 @@ func main() {
 	if cfg.APIKey == "" {
 		apikeyinput.Run(configFile, cfg)
 		cfg, _ = config.LoadConfig(configFile)
+		if cfg.APIKey == "" {
+			fmt.Println("No API key set.")
+			os.Exit(0)
+		}
 	}
 
 	app := app.NewApp(db, cfg)

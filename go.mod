@@ -11,7 +11,6 @@ require (
 	github.com/PuerkitoBio/goquery v1.12.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/lithammer/shortuuid/v4 v4.2.0
-	github.com/muesli/reflow v0.3.0
 	github.com/pressly/goose/v3 v3.27.1
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/term v0.44.0

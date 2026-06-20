@@ -9,7 +9,6 @@ import (
 	"golang.org/x/term"
 
 	"charm.land/lipgloss/v2"
-	"github.com/muesli/reflow/wordwrap"
 	"github.com/yagnikpt/flashback/internal/models"
 )
 
@@ -41,10 +40,8 @@ func formatSingleNote(note models.FlashbackWithMetadata, wrapURLs bool) string {
 		result += note.Content
 	} else {
 		contentWidth := width - len("Content: ") - 4
-		if contentWidth < 20 {
-			contentWidth = 20
-		}
-		content := wordwrap.String(note.Content, contentWidth)
+		contentWidth = max(contentWidth, 20)
+		content := lipgloss.Wrap(note.Content, contentWidth, " ")
 		content = strings.ReplaceAll(content, "\n", "\n"+strings.Repeat(" ", len("Content: ")))
 		result += content
 	}
@@ -75,10 +72,8 @@ func formatSingleNote(note models.FlashbackWithMetadata, wrapURLs bool) string {
 		}
 
 		valueWidth := width - len(key) - 8
-		if valueWidth < 20 {
-			valueWidth = 20
-		}
-		value = wordwrap.String(value, valueWidth)
+		valueWidth = max(valueWidth, 20)
+		value = lipgloss.Wrap(value, valueWidth, " ")
 		value = strings.ReplaceAll(value, "\n", "\n"+strings.Repeat(" ", 4+len(key)))
 		result += "  " + keyStyles.Render(key) + ": " + value + "\n"
 	}
@@ -122,17 +117,13 @@ func FormatMultipleNotesCompact(notes []models.FlashbackWithMetadata) string {
 		isURL := note.Type == "url" || strings.HasPrefix(note.Content, "http://") || strings.HasPrefix(note.Content, "https://")
 		if !isURL {
 			wrapWidth := width - (idColWidth + len(colGap))
-			if wrapWidth < 20 {
-				wrapWidth = 20
-			}
-			wrapped := wordwrap.String(content, wrapWidth)
+			wrapWidth = max(wrapWidth, 20)
+			wrapped := lipgloss.Wrap(content, wrapWidth, " ")
 			content = strings.ReplaceAll(wrapped, "\n", "\n"+indent)
 		}
 
 		idPadding := idColWidth - len(note.ID)
-		if idPadding < 1 {
-			idPadding = 1
-		}
+		idPadding = max(idPadding, 1)
 		result += keyStyles.Render(note.ID) + strings.Repeat(" ", idPadding) + colGap + content + "\n\n"
 	}
 	return result
